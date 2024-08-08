@@ -1,4 +1,7 @@
-#include <include/Order.h>
+#ifndef ORDERBOOK_H
+#define ORDERBOOK_H
+
+#include <Order.h>
 #include <memory>
 
 
@@ -8,9 +11,9 @@ namespace sob {
 
 struct BidComparator
 {
-    bool operator()( const L2PriceLevel& lhs, const L2PriceLevel& rhs ) const
+    bool operator()( const double& lhs, const double& rhs ) const
     {
-        if ( lhs.price > rhs.price ) {
+        if ( lhs > rhs ) {
             return true;
         } 
         return false;
@@ -19,9 +22,9 @@ struct BidComparator
 //
 struct AskComparator
 {
-    bool operator()( const L2PriceLevel& lhs, const L2PriceLevel& rhs ) const
+    bool operator()( const double& lhs, const double& rhs ) const
     {
-        if ( lhs.price < rhs.price ) {
+        if ( lhs< rhs) {
             return true;
         } 
         return false;
@@ -35,16 +38,31 @@ using OneSideBook = std::map<double, LevelType, Comparator>;
 class L2Book
 {
 private:
-    OneSideBook<L2PriceLevel, BidComparator> bidBook;
-    OneSideBook<L2PriceLevel, AskComparator> askBook;
+    OneSideBook<L2PriceLevel, BidComparator> bidBook{ BidComparator{} };
+    OneSideBook<L2PriceLevel, AskComparator> askBook{ AskComparator{} };
+
+    size_t bidSideSize = 0;
+    size_t askSideSize = 0;
 
 public:
     size_t getBidSideSize() const
     {
+        return bidSideSize;
     }
 
     size_t getAskSideSize() const
     {
+        return askSideSize;
+    }
+
+    size_t getBidSideDepth() const
+    {
+        return bidBook.size();
+    }
+
+    size_t getAskSideDepth() const
+    {
+        return askBook.size();
     }
 
     OneSideBook<L2PriceLevel, BidComparator>& getBidSide()
@@ -55,6 +73,22 @@ public:
     OneSideBook<L2PriceLevel, AskComparator>& getAskSide()
     {
         return askBook;
+    }
+
+    L2PriceLevel getBestBid() const
+    {
+        if ( bidBook.empty() ) {
+            return L2PriceLevel{};
+        }
+        return bidBook.begin()->second;
+    }
+
+    L2PriceLevel getBestAsk() const
+    {
+        if ( askBook.empty() ) {
+            return L2PriceLevel{};
+        }
+        return askBook.begin()->second;
     }
 
 public:
@@ -87,29 +121,59 @@ public:
         return ret;
     }
 
+    // @return  true if took liquidity, false if added liquidity
+    virtual bool newOrder( const Order& order )
+    {
+        assert( !order.isCancel() );
+        assert( !order.isReprice() );
+        if( order.isSell ) {
+            // Not aggressive/cross/market Order, quote orders only
+            if ( order.price > getBestBid().price ) {
+                askSideSize += order.size;
+                if ( askBook.find( order.price ) == askBook.end() ) {
+                    askBook[order.price] = L2PriceLevel{order.price, order.size};
+                } else {
+                    askBook[order.price].quantity += order.size;
+                }
+                return false;
+            }
+            return true;
+        } else {
+            // Not aggressive/cross/market Order, quote orders only
+            if ( order.price < getBestAsk().price ) {
+                bidSideSize += order.size;
+                if ( bidBook.find( order.price ) == bidBook.end() ) {
+                    bidBook[order.price] = L2PriceLevel{order.price, order.size};
+                } else {
+                    bidBook[order.price].quantity += order.size;
+                }
+                return false;
+            }
+            return true;
+        }
 
-    newOrder( const Order& order )
+    }
+
+    virtual void modifyOrder( const Order& order )
     {
     }
 
-    modifyOrder( const Order& oldOrder, const Order& newOrder )
+    virtual void cancelOrder( const Order& order )
     {
     }
 
-    cancelOrder( const Order& order )
-    {
-    }
+    L2Book() = default;
 
-    L2OrderBook() = default;
-
-    L2OrderBook( std::vector<Order>& orders )
+    L2Book( const std::vector<Order>& orders )
     {
-        for(const auto& orders)
+        for(const auto& order: orders)
         {
-            newOrder( orders );
+            newOrder( order );
         }
     }
 
 }; // class L2Book
 
 } // namespace sob
+
+#endif

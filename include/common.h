@@ -1,3 +1,7 @@
+#ifndef COMMON_H
+#define COMMON_H
+
+
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 
@@ -21,3 +25,4 @@ static auto console = [](){
 
 
 
+#endif

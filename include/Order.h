@@ -1,3 +1,6 @@
+#ifndef ORDER_H
+#define ORDER_H
+
 #include <iostream>
 // #include <catch2/catch_all.hpp>
 #include <spdlog/spdlog.h>
@@ -32,6 +35,12 @@ struct L2PriceLevel
         return ss.str();
     }
 
+    L2PriceLevel() = default;
+
+    L2PriceLevel( const double px, const int qty )
+    : price{px}, quantity{qty}
+    {}
+
     // fmt: px, qty
     L2PriceLevel( const std::string& str )
     {
@@ -43,6 +52,11 @@ struct L2PriceLevel
                           , str, e.what());
             throw;
         }
+    }
+
+    bool operator==( const L2PriceLevel& rhs ) const
+    {
+        return ( price == rhs.price && quantity == rhs.quantity );
     }
 }; // struct L2PriceLevel
 
@@ -78,7 +92,8 @@ struct L2PxLvlPair
     }
 }; // sturct L2PxLvlPair
 
-using BestMarket = L2PriceLevel;
+
+using BestMarket = L2PxLvlPair;
 
 
 struct OrderInfo
@@ -191,3 +206,5 @@ struct L3PriceLevel
 } // namespace sob
 
 
+
+#endif
