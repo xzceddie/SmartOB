@@ -10,6 +10,7 @@
 #include <unordered_map>
 #include <sstream>
 #include <optional>
+#include <algorithm>
 
 
 namespace sob {
@@ -91,9 +92,6 @@ struct L2PxLvlPair
         return ss.str();
     }
 }; // sturct L2PxLvlPair
-
-
-using BestMarket = L2PxLvlPair;
 
 
 struct OrderInfo
@@ -198,8 +196,95 @@ struct L3PriceLevel
         ss << *this;
         return ss.str();
     }
+
+    auto toL2PriceLevel() const
+    {
+        return L2PriceLevel{ price, quantity };
+    }
+
+    void addNewOrder( const Order& order )
+    {
+        assert( price == order.price );
+        quantity += order.size;
+        numOrders += 1;
+        orders.push_back( order );
+    }
+
+    L3PriceLevel() = default;
+    
+    L3PriceLevel( const std::vector<Order>& orders_ )
+    {
+        if (orders_.empty()) {
+            throw std::runtime_error( "[L3PriceLevel::L3PriceLevel] Got empty orders!" );
+        } else {
+            price = orders_[0].price;
+            numOrders = orders_.size();
+            std::copy( orders_.begin(), orders_.end(), std::back_inserter( orders ) );
+            quantity = 0;
+            for( const auto& o: orders_ ) {
+                quantity += o.size;
+            }
+        }
+    }
+
+    // if quantity is known beforehand, it is more efficient to call this one;
+    L3PriceLevel( const std::vector<Order>& orders_, const int quantity_ )
+    {
+        if (orders_.empty()) {
+            throw std::runtime_error( "[L3PriceLevel::L3PriceLevel] Got empty orders!" );
+        } else {
+            price = orders_[0].price;
+            numOrders = orders_.size();
+            std::copy( orders_.begin(), orders_.end(), std::back_inserter( orders ) );
+            quantity = quantity_;
+        }
+    }
 }; // struct L3PriceLevel
 
+
+struct L3PxLvlPair
+{
+    std::optional<L3PriceLevel> bid;
+    std::optional<L3PriceLevel> ask;
+
+    friend std::ostream& operator<<(std::ostream& os, const L3PxLvlPair& p)
+    {
+        
+        if (p.bid) {
+            os << p.bid.value().quantity << '@' << p.bid.value().price;
+        } else {
+            os << "<empty>";
+        }
+        os << " X ";
+
+        if (p.ask) {
+            os << p.ask.value().price << '@' << p.ask.value().quantity;
+        } else {
+            os << "<empty>";
+        }
+        return os;
+    }
+
+    std::string toString() const
+    {
+        std::stringstream ss;
+        ss << *this;
+        return ss.str();
+    }
+
+    auto toL2PxLvlPair() const
+    {
+        std::optional<L2PriceLevel> bid_, ask_;
+        if ( bid ) {
+            bid_ = bid->toL2PriceLevel();
+        }
+        if ( ask ) {
+            ask_ = ask->toL2PriceLevel();
+        }
+
+        return L2PxLvlPair{ bid_, ask_ };
+    }
+}; // sturct L2PxLvlPair
 
 
 
