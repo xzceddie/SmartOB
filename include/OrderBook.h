@@ -122,6 +122,7 @@ public:
     }
 
     // @return  true if took liquidity, false if added liquidity
+    // TODO: implement match logics
     virtual bool newOrder( const Order& order )
     {
         assert( !order.isCancel() );
@@ -154,10 +155,12 @@ public:
 
     }
 
+    // TODO: Implement modifyOrder
     virtual void modifyOrder( const Order& order )
     {
     }
 
+    // TODO: Implement cancelOrder
     virtual void cancelOrder( const Order& order )
     {
     }
