@@ -98,6 +98,18 @@ TEST_CASE("test_L3OrderBook_match", "1")
         REQUIRE( ob.getAskSide().begin()->second.toL2PriceLevel() == sob::L2PriceLevel( 1.5, 100 ) ); // the best ask level has been devoured
         REQUIRE( ob.getAskSideDepth() == 1 );
         REQUIRE( ob.getAskSideSize() == 100 );
+
+        sob::Order o10{ "N 9 1 50 1.35" };  // NOTE: this is a sell order
+        ob.newOrder( o10 );
+        REQUIRE( ob.getAskSide().begin()->second.toL2PriceLevel() == sob::L2PriceLevel( 1.35, 50 ) );
+        REQUIRE( ob.getAskSideDepth() == 2 );
+        REQUIRE( ob.getAskSideSize() == 150 );
+
+        sob::Order o11{ "N 10 0 200 1.5" };
+        ob.newOrder( o11 );
+        REQUIRE( ob.getAskSideDepth() == 0 );
+        REQUIRE( ob.getBidSideDepth() == 3 );
+        REQUIRE( ob.getBidSideSize() == 300 );
     }
     std::cout << ob.toString() << std::endl;
     spdlog::set_level( spdlog::level::info );

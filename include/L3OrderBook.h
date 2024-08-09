@@ -143,6 +143,7 @@ public:
                 // this order has consumed all bidBook
                 askBook[ order.price ] = L3PriceLevel{ std::vector<Order>{ order } };
                 orderMap[order.orderId] = askBook[order.price].orders.begin();
+                askSideSize += order.size;
                 return true;
             }
         } else {
@@ -194,6 +195,7 @@ public:
                 // this order has consumed all askBook
                 bidBook[ order.price ] = L3PriceLevel{ std::vector<Order>{ order } };
                 orderMap[order.orderId] = bidBook[order.price].orders.begin();
+                bidSideSize += order.size;
                 return true;
             }
         }
