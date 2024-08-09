@@ -202,12 +202,44 @@ struct L3PriceLevel
         return L2PriceLevel{ price, quantity };
     }
 
-    void addNewOrder( const Order& order )
+    auto addNewOrder( const Order& order )
     {
         assert( price == order.price );
         quantity += order.size;
         numOrders += 1;
         orders.push_back( order );
+        return std::prev( orders.end() );
+    }
+
+    // order must not take all the liquidity
+    // return how much liquidity is taken
+    size_t matchOrder( Order& order, std::unordered_map<int, std::list<Order>::iterator>& orderMap)
+    {
+        size_t res{};
+        while (true) {
+            auto& front_order = orders.front();
+            if( order.size > front_order.size ) {
+                const auto popped_id = orders.front().orderId;
+                order.size -= front_order.size;
+                res += front_order.size;
+                orders.pop_front();
+                orderMap.erase( popped_id );
+
+                numOrders -= 1;
+                quantity -= front_order.size;
+            } else {
+                orders.front().size -= order.size;
+                res += order.size;
+                quantity -= order.size;
+                if( orders.front().size == 0 ) {
+                    numOrders -= 1;
+                    orderMap.erase( orders.front().orderId );
+                    orders.pop_front();
+                }
+                break;
+            }
+        }
+        return res;
     }
 
     L3PriceLevel() = default;
