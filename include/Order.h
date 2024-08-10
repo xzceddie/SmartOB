@@ -108,6 +108,7 @@ struct Order
     double price;
 
     bool bIsCancel{false}; // for cancel order
+    bool bIsReprice{false}; // for cancel order
     std::optional<int> oldId; // for cancel and reprice orders
     std::optional<double> oldPx; // for reprice order, if this is not null, then it is a reprice order
     std::optional<int> oldSz; // for reprice order, if this is not null, then it is a reprice order
@@ -121,7 +122,8 @@ struct Order
 
     bool isReprice() const
     {
-        return oldPx.has_value();
+        // return oldPx == std::optional<double>{};
+        return bIsReprice;
     }
 
     friend std::ostream& operator<<(std::ostream& os, const Order& o)
@@ -186,6 +188,10 @@ struct Order
                 // std::cout << "Got oldId: " << *oldId << std::endl;
             } else if (type == "R") {
                 ss >> orderId >> isSell >> size >> price >> *oldId >> *oldPx >> *oldSz;
+                // std::cout << "old ID: " << *oldId << std::endl;
+                // std::cout << "old Px: " << *oldPx << std::endl;
+                // std::cout << "old Sz: " << *oldSz << std::endl;
+                bIsReprice = true;
             }
         } catch ( const std::exception& e ) {
             spdlog::error("Got error when reading L2PriceLevel from string: {}, the exception: {}"

@@ -203,3 +203,43 @@ TEST_CASE("test_L3OrderBook_cancel", "1")
     std::cout << ob.toString() << std::endl;
     spdlog::set_level( spdlog::level::info );
 }
+
+TEST_CASE("test_L3OrderBook_reprice", "1")
+{
+    spdlog::set_level(spdlog::level::debug);
+    sob::Order o1("N 0 1 100 1.5");
+    sob::Order o2("N 1 1 100 1.4");
+    sob::Order o3("N 2 1 200 1.4");
+    sob::Order o4("N 3 0 50 1.3");
+    sob::Order o5("N 4 0 100 1.3");
+    sob::Order o6("N 5 0 100 1.2");
+
+    std::vector<sob::Order> orders { o1, o2, o3, o4, o5, o6 };
+    sob::L3Book ob{ orders };
+
+    spdlog::debug("[test_L3OrderBook, 1] Constructed OrderBook: ");
+
+    {
+        {
+            sob::Order o7{ "R 6 1 250 1.5 2 1.4 250" };
+            const bool modified = ob.modifyOrder( o7 );
+            REQUIRE( modified );
+            REQUIRE( ( *ob.queryOrderId( 6 ) )->size == 250 );
+            REQUIRE( ( *ob.queryOrderId( 6 ) )->price == 1.5 );
+            REQUIRE( !ob.queryOrderId( 2 ) );
+        }
+
+        {
+            sob::Order o8{ "R 7 1 250 1.6 6 1.5 250" };
+            const bool modified = ob.modifyOrder( o8 );
+            REQUIRE( modified );
+        }
+        {
+            sob::Order o8{ "R 6 1 250 1.6 6 1.5 250" };
+            const bool modified = ob.modifyOrder( o8 );
+            REQUIRE( !modified );   // modification has to fail because orderId == 6 has been removed from the book
+        }
+    }
+    std::cout << ob.toString() << std::endl;
+    spdlog::set_level( spdlog::level::info );
+}

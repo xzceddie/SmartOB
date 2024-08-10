@@ -90,14 +90,21 @@ public:
         return askBook.begin()->second.toL2PriceLevel();
     }
 
+    void prtOrderMap()
+    {
+        std::cout << "------ start of order ids: ------\n";
+        for(auto&[ order_id, order_it]: orderMap) {
+            std::cout << order_id << ": " << *order_it << std::endl;
+        }
+        std::cout << "------  end of order ids   ------\n";
+    }
+
+
+
     std::optional<std::list<Order>::iterator> queryOrderId( const int orderId ) const
     {
 #ifdef DEBUG_ORDER_MAP
-        std::cout << "------ start of order ids: ------\n";
-        for(auto&[ order_id, order_it]: orderMap) {
-            std::cout << *order_it << std::endl;
-        }
-        std::cout << "------  end of order ids   ------\n";
+        prtOrderMap();
 #endif
         if ( orderMap.find( orderId ) == orderMap.end() ) {
             return {};
@@ -112,7 +119,7 @@ public:
     virtual bool newOrder( Order& order )
     {
         assert( !order.isCancel() );
-        assert( !order.isReprice() );
+        // assert( !order.isReprice() );
 
         if( order.isSell ) {
             if ( bidBook.empty() || order.price > getBestBid().price ) {
@@ -199,7 +206,6 @@ public:
         }
     }
 
-
     // TODO: Implement modifyOrder
     // true: reprice success, false: reprice fail
     virtual bool modifyOrder( const Order& order )
@@ -209,13 +215,11 @@ public:
         }
         auto oldOrder = *(orderMap[ *order.oldId ]);
         const auto canceled = cancelId( oldOrder.orderId );
+
         if( !canceled ) {
             return false;   // old order not found, refuse to reprice, maybe it has been traded
         } else {
             Order new_order = order;
-            new_order.oldId = {};
-            new_order.oldPx = {};
-            new_order.oldSz = {};
             newOrder( new_order );
             return true;
         }
@@ -240,6 +244,7 @@ public:
             L3Level.quantity -= it->size;
             L3Level.orders.erase( it );
         }
+        orderMap.erase( id );
         return true;
     }
 
@@ -247,24 +252,6 @@ public:
     // true: cancelled, false: cancel fail
     virtual bool cancelOrder( const Order& order )
     {
-        // if (( !order.isCancel() ) || ( orderMap.find( *order.oldId ) == orderMap.end() ) ) {
-        //     return false;
-        // }
-        // auto it = orderMap[ *order.oldId ];
-        // if ((*it).isSell) {
-        //     auto& L3Level = askBook[ (*it).price ];
-        //     askSideSize -= it->size;
-        //     L3Level.numOrders--;
-        //     L3Level.quantity -= it->size;
-        //     L3Level.orders.erase( it );
-        // } else{
-        //     auto& L3Level = bidBook[ (*it).price ];
-        //     bidSideSize -= it->size;
-        //     L3Level.numOrders--;
-        //     L3Level.quantity -= it->size;
-        //     L3Level.orders.erase( it );
-        // }
-        // return true;
         if (!order.isCancel()) {
             return false;
         }
@@ -319,16 +306,6 @@ public:
 
 
 } // namespace sob
-
-
-
-
-
-
-
-
-
-
 
 
 #endif
