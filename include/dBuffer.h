@@ -54,7 +54,7 @@ public:
 
     void erase( iterator it )
     {
-        return mBuffer.erase( it );
+        mBuffer.erase( it );
     }
 
     void pop_front()

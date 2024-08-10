@@ -91,7 +91,7 @@ public:
     L3PriceLevel<BuffType> getBestBidL3() const
     {
         if ( bidBook.empty() ) {
-            return L3PriceLevel{};
+            return L3PriceLevel<BuffType>{};
         }
         return bidBook.begin()->second;
     }
@@ -107,7 +107,7 @@ public:
     L3PriceLevel<BuffType> getBestAskL3() const
     {
         if ( askBook.empty() ) {
-            return L3PriceLevel{};
+            return L3PriceLevel<BuffType>{};
         }
         return askBook.begin()->second;
     }
@@ -157,7 +157,7 @@ public:
                 // Not aggressive/cross/market Order, quote orders only
                 askSideSize += order.size;
                 if ( askBook.find( order.price ) == askBook.end() ) {
-                    askBook[order.price] = L3PriceLevel{ std::vector<Order>{ order } };
+                    askBook[order.price] = L3PriceLevel<BuffType>{ std::vector<Order>{ order } };
                     orderMap[ order.orderId ] = askBook[order.price].orders.begin();
                 } else {
                     auto it = askBook[order.price].addNewOrder( order, orderMap );
@@ -169,7 +169,7 @@ public:
                 for( auto it = bidBook.begin(); it != bidBook.end(); ) {
                     const auto best_bid_size = getBestBid().quantity;
                     if( it->first < order.price ) {
-                        askBook[order.price] = L3PriceLevel{ std::vector<Order>{ order } };
+                        askBook[order.price] = L3PriceLevel<BuffType>{ std::vector<Order>{ order } };
                         orderMap[order.orderId] = askBook[order.price].orders.begin();
                         askSideSize += order.size;
                         return true;
@@ -188,7 +188,7 @@ public:
                     }
                 }
                 // this order has consumed all bidBook
-                askBook[ order.price ] = L3PriceLevel{ std::vector<Order>{ order } };
+                askBook[ order.price ] = L3PriceLevel<BuffType>{ std::vector<Order>{ order } };
                 orderMap[order.orderId] = askBook[order.price].orders.begin();
                 askSideSize += order.size;
                 return true;
@@ -198,7 +198,7 @@ public:
                 // Not aggressive/cross/market Order, quote orders only
                 bidSideSize += order.size;
                 if ( bidBook.find( order.price ) == bidBook.end() ) {
-                    bidBook[order.price] = L3PriceLevel{ std::vector<Order>{ order } };
+                    bidBook[order.price] = L3PriceLevel<BuffType>{ std::vector<Order>{ order } };
                     orderMap[ order.orderId ] = bidBook[order.price].orders.begin();
                 } else {
                     auto it = bidBook[order.price].addNewOrder( order, orderMap );
@@ -210,7 +210,7 @@ public:
                 for( auto it = askBook.begin(); it != askBook.end(); ) {
                     const auto best_ask_size = getBestAsk().quantity;
                     if( it->first > order.price ) {
-                        bidBook[order.price] = L3PriceLevel{ std::vector<Order>{ order } };
+                        bidBook[order.price] = L3PriceLevel<BuffType>{ std::vector<Order>{ order } };
                         orderMap[order.orderId] = bidBook[order.price].orders.begin();
                         bidSideSize += order.size;
                         return true;
@@ -229,7 +229,7 @@ public:
                     }
                 }
                 // this order has consumed all askBook
-                bidBook[ order.price ] = L3PriceLevel{ std::vector<Order>{ order } };
+                bidBook[ order.price ] = L3PriceLevel<BuffType>{ std::vector<Order>{ order } };
                 orderMap[order.orderId] = bidBook[order.price].orders.begin();
                 bidSideSize += order.size;
                 return true;
