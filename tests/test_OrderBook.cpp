@@ -162,8 +162,8 @@ TEST_CASE("test_L3OrderBook_match_sell", "1")
 
         REQUIRE( ( *ob.queryOrderId( 10 ) )->size == 50 );
         REQUIRE( ( *ob.queryOrderId( 10 ) )->price == 1.2 );
-        // REQUIRE( ( *ob.queryOrderId( 1 ) )->size == 100 );
-        // REQUIRE( ( *ob.queryOrderId( 3 ) )->price == 1.4 );
+        REQUIRE( ( *ob.queryOrderId( 1 ) )->size == 100 );
+        REQUIRE( ( *ob.queryOrderId( 1 ) )->price == 1.4 );
     }
     std::cout << ob.toString() << std::endl;
     spdlog::set_level( spdlog::level::info );
