@@ -133,7 +133,7 @@ public:
                     askBook[order.price] = L3PriceLevel{ std::vector<Order>{ order } };
                     orderMap[ order.orderId ] = askBook[order.price].orders.begin();
                 } else {
-                    auto it = askBook[order.price].addNewOrder( order );
+                    auto it = askBook[order.price].addNewOrder( order, orderMap );
                     orderMap[order.orderId] = it;
                 }
                 return false;
@@ -171,10 +171,10 @@ public:
                 // Not aggressive/cross/market Order, quote orders only
                 bidSideSize += order.size;
                 if ( bidBook.find( order.price ) == bidBook.end() ) {
-                    bidBook[order.price] = L3PriceLevel{ std::vector<Order>{ order }};
+                    bidBook[order.price] = L3PriceLevel{ std::vector<Order>{ order } };
                     orderMap[ order.orderId ] = bidBook[order.price].orders.begin();
                 } else {
-                    auto it = bidBook[order.price].addNewOrder( order );
+                    auto it = bidBook[order.price].addNewOrder( order, orderMap );
                     orderMap[ order.orderId ] = it;
                 }
                 return false;
@@ -229,6 +229,7 @@ public:
         }
     }
 
+    // TODO: change the L3Level.orders.erase(it) to something better, i.e. mark an order is canceled
     virtual bool cancelId( const int id )
     {
         if( orderMap.find( id ) == orderMap.end() ) {
@@ -263,6 +264,9 @@ public:
     }
 
 
+    /**
+     *  @brief  apply order of either of the type OrderType::Normal, OrderType::Cancel, OrderType::Reprice
+     */
     std::pair<OrderType, bool> applyOrder( Order& order )
     {
         switch (order.getType())
@@ -275,7 +279,6 @@ public:
                 return { OrderType::Reprice, modifyOrder( order ) };
         }
     }
- 
 
     L3Book( std::vector<Order>& orders )
     {

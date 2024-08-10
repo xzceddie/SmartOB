@@ -267,6 +267,15 @@ struct L3PriceLevel
         return std::prev( orders.end() );
     }
 
+    auto addNewOrder( const Order& order, std::unordered_map<int, typename BuffType<Order>::iterator>& orderMap)
+    {
+        assert( price == order.price );
+        quantity += order.size;
+        numOrders += 1;
+        orders.push_back( order );
+        return std::prev( orders.end() );
+    }
+
     // order must not take all the liquidity
     // return how much liquidity is taken
     // size_t matchOrder( Order& order, std::unordered_map<int, std::list<Order>::iterator>& orderMap)
@@ -318,6 +327,147 @@ struct L3PriceLevel
 
     // if quantity is known beforehand, it is more efficient to call this one;
     L3PriceLevel( const std::vector<Order>& orders_, const int quantity_ )
+    {
+        if (orders_.empty()) {
+            throw std::runtime_error( "[L3PriceLevel::L3PriceLevel] Got empty orders!" );
+        } else {
+            price = orders_[0].price;
+            numOrders = orders_.size();
+            std::copy( orders_.begin(), orders_.end(), std::back_inserter( orders ) );
+            quantity = quantity_;
+        }
+    }
+}; // struct L3PriceLevel
+
+/**
+ *  @brief  specialisation of the template class L3PriceLevel for boost::circular_buffer
+ */
+template <>
+struct L3PriceLevel<boost::circular_buffer>
+{
+    double price;
+    int quantity;
+    int numOrders;
+    // std::list<Order> orders;
+    // dBuffer<Order, boost::circular_buffer> orders;
+    dBuffer<Order, boost::circular_buffer> orders;
+
+    friend std::ostream& operator<<(std::ostream& os, const L3PriceLevel& l)
+    {
+        os << "L3PxLvl{px=" << l.price
+           << ", qty=" << l.quantity
+           << ", #orders=" << l.numOrders
+           << ", orders={";
+
+        for (auto& o : l.orders) 
+            os << o << ", ";
+        os << "}";
+        return os;
+    }
+
+    std::string toString() const
+    {
+        std::stringstream ss;
+        ss << *this;
+        return ss.str();
+    }
+
+    auto toL2PriceLevel() const
+    {
+        return L2PriceLevel{ price, quantity };
+    }
+
+    auto addNewOrder( const Order& order, std::unordered_map<int, typename boost::circular_buffer<Order>::iterator>& orderMap)
+    {
+        assert( price == order.price );
+        quantity += order.size;
+        numOrders += 1;
+        auto itmaps = orders.push_back( order );
+        if (!itmaps.empty()) {
+            // spdlog::warn( "[L3PriceLevel::addNewOrder] Got Iterator invalidation! itmaps.size() = {}", itmaps.size() );
+            for(auto&[ ind, it ]: orderMap) {
+                orderMap[ ind ];
+                if ( itmaps.find( it ) != itmaps.end() ) {
+                    orderMap[ ind ] = itmaps[ it ];
+                }
+            }
+        }
+        return std::prev( orders.end() );
+    }
+
+    // order must not take all the liquidity
+    // return how much liquidity is taken
+    // size_t matchOrder( Order& order, std::unordered_map<int, std::list<Order>::iterator>& orderMap)
+    size_t matchOrder( Order& order, std::unordered_map<int, typename boost::circular_buffer<Order>::iterator>& orderMap)
+    {
+        size_t res{};
+        while (true) {
+            auto& front_order = orders.front();
+            if( order.size > front_order.size ) {
+                const auto popped_id = orders.front().orderId;
+                order.size -= front_order.size;
+                res += front_order.size;
+                orders.pop_front();
+                orderMap.erase( popped_id );
+
+                numOrders -= 1;
+                quantity -= front_order.size;
+            } else {
+                orders.front().size -= order.size;
+                res += order.size;
+                quantity -= order.size;
+                if( orders.front().size == 0 ) {
+                    numOrders -= 1;
+                    orderMap.erase( orders.front().orderId );
+                    orders.pop_front();
+                }
+                break;
+            }
+        }
+        return res;
+    }
+
+    L3PriceLevel() = default;
+
+    L3PriceLevel( const int orders_init_size )
+    : price(0), quantity(0), numOrders(0)
+    , orders( orders_init_size )
+    {}
+    
+    L3PriceLevel( const std::vector<Order>& orders_ )
+    {
+        if (orders_.empty()) {
+            throw std::runtime_error( "[L3PriceLevel::L3PriceLevel] Got empty orders!" );
+        } else {
+            price = orders_[0].price;
+            numOrders = orders_.size();
+            std::copy( orders_.begin(), orders_.end(), std::back_inserter( orders ) );
+            quantity = 0;
+            for( const auto& o: orders_ ) {
+                quantity += o.size;
+            }
+        }
+    }
+
+    L3PriceLevel( const std::vector<Order>& orders_, const int init_size )
+    : orders( init_size )
+    {
+        if (orders_.empty()) {
+            throw std::runtime_error( "[L3PriceLevel::L3PriceLevel] Got empty orders!" );
+        } else {
+            price = orders_[0].price;
+            numOrders = orders_.size();
+            std::copy( orders_.begin(), orders_.end(), std::back_inserter( orders ) );
+            quantity = 0;
+            for( const auto& o: orders_ ) {
+                quantity += o.size;
+            }
+        }
+    }
+
+    // if quantity is known beforehand, it is more efficient to call this one;
+    L3PriceLevel( const std::vector<Order>& orders_, const int quantity_, const int init_size )
+    : orders( init_size )
     {
         if (orders_.empty()) {
             throw std::runtime_error( "[L3PriceLevel::L3PriceLevel] Got empty orders!" );

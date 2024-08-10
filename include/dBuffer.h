@@ -8,6 +8,7 @@
 #include <numeric>
 #include <iostream>
 #include <list>
+#include <unordered_set>
 
 
 
@@ -25,6 +26,7 @@ class dBuffer
 {
 private:
     mutable EngineT<T> mBuffer;
+
 public:
     dBuffer() = default;
     template <typename... Args>
@@ -50,7 +52,7 @@ public:
         return mBuffer.size();
     }
 
-    iterator erase( iterator it )
+    void erase( iterator it )
     {
         return mBuffer.erase( it );
     }
@@ -115,33 +117,54 @@ class dBuffer< T, boost::circular_buffer>
 {
 private:
     mutable boost::circular_buffer<T> mBuffer;
+    // std::set<typename boost::circular_buffer<T>::iterator> InvalidIts;
+
 public:
     dBuffer()
-    : mBuffer( 4 )
+    : mBuffer( 1 )
     {
     }
     template <typename... Args>
     dBuffer( Args&&... args ): mBuffer( std::forward<Args...>( args... ) )
     {}
 
-    void push_back( const T& val )
+    std::map<typename boost::circular_buffer<T>::iterator, typename boost::circular_buffer<T>::iterator> push_back( const T& val )
+    // void push_back( const T& val )
     {
+        std::map<typename boost::circular_buffer<T>::iterator, typename boost::circular_buffer<T>::iterator> itmaps;
         if (mBuffer.full()) {
             boost::circular_buffer<T> tmp( mBuffer.size() * 2 );
-            std::copy( mBuffer.begin(), mBuffer.end(), std::back_inserter( tmp ) );
+            for( auto it = mBuffer.begin(); it != mBuffer.end(); ++it ) {
+                // if (InvalidIts.find( it ) == InvalidIts.end()) {
+                    tmp.push_back( *it );
+                    itmaps[it] = std::prev(tmp.end());
+                // }
+            }
+            // spdlog::warn( "[dBuffer::push_front] mBuffer full!, Got itmap size: {}", itmaps.size() );
             mBuffer.swap( tmp );
         }
         mBuffer.push_back( val );
+        return itmaps;
     }
 
-    void push_front( const T& val )
+    std::map<typename boost::circular_buffer<T>::iterator, typename boost::circular_buffer<T>::iterator> push_front( const T& val )
+    // void push_front( const T& val )
     {
+        std::map<typename boost::circular_buffer<T>::iterator, typename boost::circular_buffer<T>::iterator> itmaps;
         if (mBuffer.full()) {
             boost::circular_buffer<T> tmp( mBuffer.size() * 2 );
-            std::copy( mBuffer.begin(), mBuffer.end(), std::back_inserter( tmp ) );
+            // std::copy( mBuffer.begin(), mBuffer.end(), std::back_inserter( tmp ) );
+            for( auto it = mBuffer.begin(); it != mBuffer.end(); ++it ) {
+                // if (InvalidIts.find( it ) == InvalidIts.end()) {
+                    tmp.push_back( *it );
+                    itmaps[it] = std::prev(tmp.end());
+                // }
+            }
             mBuffer.swap( tmp );
         }
+        // spdlog::warn( "[dBuffer::push_front] mBuffer full!, Got itmap size: {}", itmaps.size() );
         mBuffer.push_front( val );
+        return itmaps;
     }
 
     using iterator = typename boost::circular_buffer<T>::iterator;
@@ -150,73 +173,86 @@ public:
 
     size_t size() const
     {
+        // size deducting the size in the InvalidIts
+        // return mBuffer.size() - InvalidIts.size();
         return mBuffer.size();
     }
 
-    iterator erase( iterator it )
+    void erase( iterator it )
     {
-        return mBuffer.erase( it );
+        // return mBuffer.erase( it );
+        // InvalidIts.insert( it );
+        mBuffer.erase( it );
     }
 
     void pop_front()
     {
+        // clean up the invalid iterattors in the beginnings
+        // while(InvalidIts.find( mBuffer.begin()) != InvalidIts.end()) {
+        //     mBuffer.pop_front();
+        // }
         return mBuffer.pop_front();
     }
 
     T& front() const
     {
+        // while(InvalidIts.find( mBuffer.begin()) != InvalidIts.end()) {
+        //     mBuffer.pop_front();
+        // }
         return mBuffer.front();
     }
 
-    // iterator begin()
-    // {
-    //     return mBuffer.begin();
-    // }
-    //
-    // iterator end()
-    // {
-    //     return mBuffer.end();
-    // }
-
     iterator begin() const
     {
+        // while(InvalidIts.find( mBuffer.begin()) != InvalidIts.end()) {
+        //     mBuffer.pop_front();
+        // }
         return mBuffer.begin();
     }
 
     iterator end() const
     {
+        // while(InvalidIts.find( std::prev(mBuffer.end())) != InvalidIts.end()) {
+        //     mBuffer.pop_back();
+        // }
         return mBuffer.end();
     }
 
     const_iterator cbegin() const
     {
+        // while(InvalidIts.find( mBuffer.begin()) != InvalidIts.end()) {
+        //     mBuffer.pop_front();
+        // }
         return mBuffer.cbegin();
     }
 
     const_iterator cend() const
     {
+        // while(InvalidIts.find( std::prev(mBuffer.end())) != InvalidIts.end()) {
+        //     mBuffer.pop_back();
+        // }
         return mBuffer.cend();
     }
 
-    friend iterator begin( dBuffer& buf )
-    {
-        return buf.begin();
-    }
-
-    friend const_iterator begin( const dBuffer& buf )
-    {
-        return buf.cbegin();
-    }
-
-    friend iterator end( dBuffer& buf )
-    {
-        return buf.end();
-    }
-
-    friend const_iterator cend( const dBuffer& buf )
-    {
-        return buf.cend();
-    }
+    // friend iterator begin( dBuffer& buf )
+    // {
+    //     return buf.begin();
+    // }
+    //
+    // friend const_iterator begin( const dBuffer& buf )
+    // {
+    //     return buf.cbegin();
+    // }
+    //
+    // friend iterator end( dBuffer& buf )
+    // {
+    //     return buf.end();
+    // }
+    //
+    // friend const_iterator cend( const dBuffer& buf )
+    // {
+    //     return buf.cend();
+    // }
 
 }; // class dBuffer
 
