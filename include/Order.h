@@ -103,7 +103,7 @@ struct OrderInfo
 
 enum class OrderType
 {
-    Nornal,
+    Normal,
     Cancel,
     Reprice
 }; // enum class OrderType
@@ -131,7 +131,7 @@ struct Order
         } else if ( bIsReprice ) {
             return OrderType::Reprice;
         } else {
-            return OrderType::Nornal;
+            return OrderType::Normal;
         }
     }
 

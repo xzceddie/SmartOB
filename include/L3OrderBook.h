@@ -261,13 +261,28 @@ public:
         }
         return cancelId(*order.oldId );
     }
+
+
+    std::pair<OrderType, bool> applyOrder( Order& order )
+    {
+        switch (order.getType())
+        {
+            case OrderType::Normal:
+                return { OrderType::Normal, newOrder( order ) };
+            case OrderType::Cancel:
+                return { OrderType::Cancel, cancelOrder( order ) };
+            case OrderType::Reprice:
+                return { OrderType::Reprice, modifyOrder( order ) };
+        }
+    }
  
 
     L3Book( std::vector<Order>& orders )
     {
         for(auto& order: orders)
         {
-            newOrder( order );
+            // newOrder( order );
+            applyOrder( order );
         }
     }
 
