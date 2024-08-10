@@ -25,7 +25,7 @@ private:
     OneSideBook<L3PriceLevel<BuffType>, BidComparator> bidBook;
     OneSideBook<L3PriceLevel<BuffType>, AskComparator> askBook;
     // std::unordered_map<int, std::list<Order>::iterator> orderMap;
-    std::unordered_map<int, dBuffer<Order, boost::circular_buffer>::iterator> orderMap;
+    std::unordered_map<int, typename dBuffer<Order, BuffType>::iterator> orderMap;
 
     size_t bidSideSize = 0;
     size_t askSideSize = 0;
