@@ -210,15 +210,25 @@ public:
     // true: cancelled, false: cancel fail
     virtual bool cancelOrder( const Order& order )
     {
-        if (orderMap.find( order.orderId ) == orderMap.end() ) {
+        if (( !order.isCancel() ) || ( orderMap.find( *order.oldId ) == orderMap.end() ) ) {
             return false;
         }
-        auto it = orderMap[ order.orderId ];
-        if (order.isSell) {
-            auto& L3Level = askBook[ order.price ];
+        auto it = orderMap[ *order.oldId ];
+        if ((*it).isSell) {
+            auto& L3Level = askBook[ (*it).price ];
+            // std::cout << "orig askSideSize: " << askSideSize << std::endl;
+            askSideSize -= it->size;
+            L3Level.numOrders--;
+            L3Level.quantity -= it->size;
+            // std::cout << "changed askSideSize: " << askSideSize << std::endl;
             L3Level.orders.erase( it );
         } else{
-            auto& L3Level = bidBook[ order.price ];
+            auto& L3Level = bidBook[ (*it).price ];
+            // std::cout << "orig bidSideSize: " << bidSideSize << std::endl;
+            bidSideSize -= it->size;
+            L3Level.numOrders--;
+            L3Level.quantity -= it->size;
+            // std::cout << "changed bidSideSize: " << bidSideSize << std::endl;
             L3Level.orders.erase( it );
         }
         return true;

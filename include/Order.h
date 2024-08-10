@@ -11,6 +11,7 @@
 #include <sstream>
 #include <optional>
 #include <algorithm>
+#include <string_view>
 
 
 namespace sob {
@@ -107,6 +108,7 @@ struct Order
     double price;
 
     bool bIsCancel{false}; // for cancel order
+    std::optional<int> oldId; // for cancel and reprice orders
     std::optional<double> oldPx; // for reprice order, if this is not null, then it is a reprice order
     std::optional<int> oldSz; // for reprice order, if this is not null, then it is a reprice order
 
@@ -124,16 +126,29 @@ struct Order
 
     friend std::ostream& operator<<(std::ostream& os, const Order& o)
     {
-        os << "Order{orderId=" << o.orderId
-           << ", isSell=" << o.isSell
-           << ", size=" << o.size
-           << ", price=" << o.price
-           << ", bIsCancel=" << o.bIsCancel;
+        const auto get_type_str = [](const Order& o) -> std::string_view
+        {
+            if (o.isCancel()) {
+                return "cancel";
+            } else if ( o.isReprice() ) {
+                return "reprice";
+            } else {
+                return "normal";
+            }
+        };
+        os << "Order{type=" << get_type_str(o)
+           << ", id=" << o.orderId
+           << ", is_sell=" << o.isSell
+           << ", sz=" << o.size
+           << ", px=" << o.price
+           // << ", bIsCancel=" << o.bIsCancel
+        ;
+        if(o.isReprice() || o.isCancel()) {
+            os << ", oldId=" << *o.oldId;
+        }
         if(o.isReprice()) {
             os << ", oldPx=" << *o.oldPx
                << ", oldSz=" << *o.oldSz;
-        } else {
-            os << ", oldPx=null" << ", oldSz=null";
         }
         os << "}";
         return os;
@@ -146,7 +161,7 @@ struct Order
         return ss.str();
     }
 
-    // fmt: type{Normal{'N'}, cancel{'C'}, reprice{'R'}}, orderId, isSell {0, 1}, size, price, [oldPx, oldSz]
+    // fmt: type{Normal{'N'}, cancel{'C'}, reprice{'R'}}, orderId, isSell {0, 1}, size, price, [oldId], [oldPx], [oldSz]
     Order( const std::string& str )
     {
         std::stringstream ss(str);
@@ -156,9 +171,13 @@ struct Order
             if (type == "N") {
                 ss >> orderId >> isSell >> size >> price; 
             } else if (type == "C") {
-                ss >> orderId ; // Does cancel orders need new order id?
+                ss >> orderId ;
+                bIsCancel = true;
+                int _{};
+                ss >> _ >> _ >> _ >> *oldId >> _ >> _;
+                // std::cout << "Got oldId: " << *oldId << std::endl;
             } else if (type == "R") {
-                ss >> orderId >> isSell >> size >> price >> *oldPx >> *oldSz; // does reprice orders need new order id?
+                ss >> orderId >> isSell >> size >> price >> *oldId >> *oldPx >> *oldSz;
             }
         } catch ( const std::exception& e ) {
             spdlog::error("Got error when reading L2PriceLevel from string: {}, the exception: {}"
@@ -179,9 +198,9 @@ struct L3PriceLevel
 
     friend std::ostream& operator<<(std::ostream& os, const L3PriceLevel& l)
     {
-        os << "L3PriceLevel{price=" << l.price
-           << ", quantity=" << l.quantity
-           << ", numOrders=" << l.numOrders
+        os << "L3PxLvl{px=" << l.price
+           << ", qty=" << l.quantity
+           << ", #orders=" << l.numOrders
            << ", orders={";
 
         for (auto& o : l.orders) 

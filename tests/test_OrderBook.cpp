@@ -170,3 +170,27 @@ TEST_CASE("test_L3OrderBook_match_sell", "1")
 }
 
 
+TEST_CASE("test_L3OrderBook_cancel", "1")
+{
+    spdlog::set_level(spdlog::level::debug);
+    sob::Order o1("N 0 1 100 1.5");
+    sob::Order o2("N 1 1 100 1.4");
+    sob::Order o3("N 2 1 200 1.4");
+    sob::Order o4("N 3 0 50 1.3");
+    sob::Order o5("N 4 0 100 1.3");
+    sob::Order o6("N 5 0 100 1.2");
+
+    std::vector<sob::Order> orders { o1, o2, o3, o4, o5, o6 };
+    sob::L3Book ob{ orders };
+
+    spdlog::debug("[test_L3OrderBook, 1] Constructed OrderBook: ");
+
+    {
+        sob::Order o7{ "C 6 0 0 0 1 0 0" };  // NOTE: this is a sell order
+        const bool calceled = ob.cancelOrder( o7 );
+        REQUIRE( calceled );
+        REQUIRE(  ob.getAskSide().begin()->second.toL2PriceLevel() == sob::L2PriceLevel( 1.4, 200 ) );
+    }
+    std::cout << ob.toString() << std::endl;
+    spdlog::set_level( spdlog::level::info );
+}
