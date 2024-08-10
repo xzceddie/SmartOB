@@ -12,6 +12,7 @@
 #include <optional>
 #include <algorithm>
 #include <string_view>
+#include <dBuffer.h>
 
 
 namespace sob {
@@ -100,6 +101,14 @@ struct OrderInfo
     // what should I put in here?
 }; // struct OrderInfo
 
+enum class OrderType
+{
+    Nornal,
+    Cancel,
+    Reprice
+}; // enum class OrderType
+
+
 struct Order
 {
     int orderId;
@@ -114,6 +123,17 @@ struct Order
     std::optional<int> oldSz; // for reprice order, if this is not null, then it is a reprice order
 
     std::shared_ptr<OrderInfo> info;
+
+    OrderType getType() const
+    {
+        if( bIsCancel ) {
+            return OrderType::Cancel;
+        } else if ( bIsReprice ) {
+            return OrderType::Reprice;
+        } else {
+            return OrderType::Nornal;
+        }
+    }
 
     bool isCancel() const
     {
@@ -203,12 +223,15 @@ struct Order
 }; // struct Order
 
 
+template <template <typename T, typename AllocT=std::allocator<T> > class BuffType = boost::circular_buffer>
 struct L3PriceLevel
 {
     double price;
     int quantity;
     int numOrders;
-    std::list<Order> orders;
+    // std::list<Order> orders;
+    // dBuffer<Order, boost::circular_buffer> orders;
+    dBuffer<Order, BuffType> orders;
 
     friend std::ostream& operator<<(std::ostream& os, const L3PriceLevel& l)
     {
@@ -246,7 +269,8 @@ struct L3PriceLevel
 
     // order must not take all the liquidity
     // return how much liquidity is taken
-    size_t matchOrder( Order& order, std::unordered_map<int, std::list<Order>::iterator>& orderMap)
+    // size_t matchOrder( Order& order, std::unordered_map<int, std::list<Order>::iterator>& orderMap)
+    size_t matchOrder( Order& order, std::unordered_map<int, typename BuffType<Order>::iterator>& orderMap)
     {
         size_t res{};
         while (true) {
@@ -306,11 +330,11 @@ struct L3PriceLevel
     }
 }; // struct L3PriceLevel
 
-
+template <template <typename T, typename AllocT=std::allocator<T> > class BuffType = boost::circular_buffer>
 struct L3PxLvlPair
 {
-    std::optional<L3PriceLevel> bid;
-    std::optional<L3PriceLevel> ask;
+    std::optional<L3PriceLevel<BuffType>> bid;
+    std::optional<L3PriceLevel<BuffType>> ask;
 
     friend std::ostream& operator<<(std::ostream& os, const L3PxLvlPair& p)
     {

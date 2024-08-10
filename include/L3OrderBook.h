@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <OrderBook.h>
 #include <common.h>
+#include <dBuffer.h>
 
 
 
@@ -16,13 +17,15 @@ using OneSideBook = std::map<double, LevelType, Comparator>;
 /**
  *  @brief  This is not a Template class;
  */
+template <template <typename T, typename AllocT=std::allocator<T> > class BuffType = boost::circular_buffer>
 class L3Book
     // : public L2Book
 {
 private:
-    OneSideBook<L3PriceLevel, BidComparator> bidBook;
-    OneSideBook<L3PriceLevel, AskComparator> askBook;
-    std::unordered_map<int, std::list<Order>::iterator> orderMap;
+    OneSideBook<L3PriceLevel<BuffType>, BidComparator> bidBook;
+    OneSideBook<L3PriceLevel<BuffType>, AskComparator> askBook;
+    // std::unordered_map<int, std::list<Order>::iterator> orderMap;
+    std::unordered_map<int, dBuffer<Order, boost::circular_buffer>::iterator> orderMap;
 
     size_t bidSideSize = 0;
     size_t askSideSize = 0;
@@ -48,17 +51,17 @@ public:
         return askBook.size();
     }
 
-    OneSideBook<L3PriceLevel, BidComparator>& getBidSide()
+    OneSideBook<L3PriceLevel<BuffType>, BidComparator>& getBidSide()
     {
         return bidBook;
     }
 
-    OneSideBook<L3PriceLevel, AskComparator>& getAskSide()
+    OneSideBook<L3PriceLevel<BuffType>, AskComparator>& getAskSide()
     {
         return askBook;
     }
 
-    L3PriceLevel getBestBidL3() const
+    L3PriceLevel<BuffType> getBestBidL3() const
     {
         if ( bidBook.empty() ) {
             return L3PriceLevel{};
@@ -74,7 +77,7 @@ public:
         return bidBook.begin()->second.toL2PriceLevel();
     }
 
-    L3PriceLevel getBestAskL3() const
+    L3PriceLevel<BuffType> getBestAskL3() const
     {
         if ( askBook.empty() ) {
             return L3PriceLevel{};
@@ -101,7 +104,8 @@ public:
 
 
 
-    std::optional<std::list<Order>::iterator> queryOrderId( const int orderId ) const
+    // std::optional<std::list<Order>::iterator> queryOrderId( const int orderId ) const
+    std::optional<typename BuffType<Order>::iterator> queryOrderId( const int orderId ) const
     {
 #ifdef DEBUG_ORDER_MAP
         prtOrderMap();
@@ -257,6 +261,7 @@ public:
         }
         return cancelId(*order.oldId );
     }
+ 
 
     L3Book( std::vector<Order>& orders )
     {
