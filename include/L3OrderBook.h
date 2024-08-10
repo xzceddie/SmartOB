@@ -36,7 +36,7 @@ public:
      * @brief a custom copy constructor is necessary to deal with the iterator problem
      *        If trivially copied, the copied iterators will point to the original object
      */
-    L3Book( const L3Book& rhs )
+    L3Book( const L3Book<BuffType>& rhs )
     : bidBook { rhs.bidBook }
     , askBook { rhs.askBook }
     , bidSideSize { rhs.bidSideSize }
@@ -45,15 +45,13 @@ public:
         for( auto&[ ind, it ]: rhs.orderMap ) {
             const double px = it->price;
             
-            // L3PriceLevel<BuffType> rhs_lvl;;
-            // L3PriceLevel<BuffType> lvl;
-            
             if (it -> isSell) {
-                // rhs_lvl = rhs.askBook[px];
-                orderMap[ind] = askBook[px].orders.begin() + ( it - rhs.askBook.at(px).orders.begin() );
+                // orderMap[ind] = askBook[px].orders.begin() + ( it - const_cast<typename BuffType<Order>::iterator>(rhs.askBook.at(px).orders.begin()) );
+                orderMap[ind] = std::next(askBook[px].orders.begin(), std::distance( static_cast<typename BuffType<Order>::iterator>(it), rhs.askBook.at(px).orders.begin()));
             } else {
-                // rhs_lvl = rhs.bidBook[px];
-                orderMap[ind] = bidBook[px].orders.begin() + ( it - rhs.bidBook.at(px).orders.begin() );
+                // orderMap[ind] = bidBook[px].orders.begin() + ( it - const_cast<typename BuffType<Order>::iterator>(rhs.bidBook.at(px).orders.begin()) );
+                // orderMap[ind] = bidBook[px].orders.begin() + ( static_cast<typename BuffType<Order>::iterator>(it) - rhs.bidBook.at(px).orders.begin());
+                orderMap[ind] = std::next(bidBook[px].orders.begin(), std::distance( static_cast<typename BuffType<Order>::iterator>(it), rhs.bidBook.at(px).orders.begin()));
             }
         }
     }
