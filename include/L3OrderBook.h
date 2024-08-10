@@ -199,39 +199,76 @@ public:
         }
     }
 
+
     // TODO: Implement modifyOrder
     // true: reprice success, false: reprice fail
     virtual bool modifyOrder( const Order& order )
     {
-        return false;
+        if ( (!order.isReprice()) || ( orderMap.find( *order.oldId ) == orderMap.end() ) ) {
+            return false;
+        }
+        auto oldOrder = *(orderMap[ *order.oldId ]);
+        const auto canceled = cancelId( oldOrder.orderId );
+        if( !canceled ) {
+            return false;   // old order not found, refuse to reprice, maybe it has been traded
+        } else {
+            Order new_order = order;
+            new_order.oldId = {};
+            new_order.oldPx = {};
+            new_order.oldSz = {};
+            newOrder( new_order );
+            return true;
+        }
+    }
+
+    virtual bool cancelId( const int id )
+    {
+        if( orderMap.find( id ) == orderMap.end() ) {
+            return false;
+        }
+        auto it = orderMap[id];
+        if ((*it).isSell) {
+            auto& L3Level = askBook[ (*it).price ];
+            askSideSize -= it->size;
+            L3Level.numOrders--;
+            L3Level.quantity -= it->size;
+            L3Level.orders.erase( it );
+        } else{
+            auto& L3Level = bidBook[ (*it).price ];
+            bidSideSize -= it->size;
+            L3Level.numOrders--;
+            L3Level.quantity -= it->size;
+            L3Level.orders.erase( it );
+        }
+        return true;
     }
 
     // TODO: Implement cancelOrder
     // true: cancelled, false: cancel fail
     virtual bool cancelOrder( const Order& order )
     {
-        if (( !order.isCancel() ) || ( orderMap.find( *order.oldId ) == orderMap.end() ) ) {
+        // if (( !order.isCancel() ) || ( orderMap.find( *order.oldId ) == orderMap.end() ) ) {
+        //     return false;
+        // }
+        // auto it = orderMap[ *order.oldId ];
+        // if ((*it).isSell) {
+        //     auto& L3Level = askBook[ (*it).price ];
+        //     askSideSize -= it->size;
+        //     L3Level.numOrders--;
+        //     L3Level.quantity -= it->size;
+        //     L3Level.orders.erase( it );
+        // } else{
+        //     auto& L3Level = bidBook[ (*it).price ];
+        //     bidSideSize -= it->size;
+        //     L3Level.numOrders--;
+        //     L3Level.quantity -= it->size;
+        //     L3Level.orders.erase( it );
+        // }
+        // return true;
+        if (!order.isCancel()) {
             return false;
         }
-        auto it = orderMap[ *order.oldId ];
-        if ((*it).isSell) {
-            auto& L3Level = askBook[ (*it).price ];
-            // std::cout << "orig askSideSize: " << askSideSize << std::endl;
-            askSideSize -= it->size;
-            L3Level.numOrders--;
-            L3Level.quantity -= it->size;
-            // std::cout << "changed askSideSize: " << askSideSize << std::endl;
-            L3Level.orders.erase( it );
-        } else{
-            auto& L3Level = bidBook[ (*it).price ];
-            // std::cout << "orig bidSideSize: " << bidSideSize << std::endl;
-            bidSideSize -= it->size;
-            L3Level.numOrders--;
-            L3Level.quantity -= it->size;
-            // std::cout << "changed bidSideSize: " << bidSideSize << std::endl;
-            L3Level.orders.erase( it );
-        }
-        return true;
+        return cancelId(*order.oldId );
     }
 
     L3Book( std::vector<Order>& orders )

@@ -129,16 +129,24 @@ struct Order
         const auto get_type_str = [](const Order& o) -> std::string_view
         {
             if (o.isCancel()) {
-                return "cancel";
+                return "C";
             } else if ( o.isReprice() ) {
-                return "reprice";
+                return "R";
             } else {
-                return "normal";
+                return "N";
             }
         };
-        os << "Order{type=" << get_type_str(o)
+        const auto get_side_str = [](const Order& o) -> std::string_view
+        {
+            if (o.isSell) {
+                return "sell";
+            } else {
+                return "buy";
+            }
+        };
+        os << "Order{" << get_type_str(o)
            << ", id=" << o.orderId
-           << ", is_sell=" << o.isSell
+           << ", " << get_side_str(o)
            << ", sz=" << o.size
            << ", px=" << o.price
            // << ", bIsCancel=" << o.bIsCancel
