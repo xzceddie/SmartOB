@@ -9,15 +9,19 @@
 
 namespace sob {
 
-// Create a logger with a colorful output to stdout
-static auto console = [](){
+// // Create a logger with a colorful output to stdout
+// static auto console = [](){
+//
+//     spdlog::stdout_color_mt("console");
+//     spdlog::set_default_logger(console);
+//     // Set the log level to trace
+//     spdlog::set_level(spdlog::level::info);
+//
+// }();
 
-    spdlog::stdout_color_mt("console");
-    spdlog::set_default_logger(console);
-    // Set the log level to trace
-    spdlog::set_level(spdlog::level::info);
 
-}();
+
+// #define DEBUG_ORDER_MAP
 
 
 } // namespace sob

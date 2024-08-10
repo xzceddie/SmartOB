@@ -4,6 +4,7 @@
 
 #include <unordered_map>
 #include <OrderBook.h>
+#include <common.h>
 
 
 
@@ -91,6 +92,13 @@ public:
 
     std::optional<std::list<Order>::iterator> queryOrderId( const int orderId ) const
     {
+#ifdef DEBUG_ORDER_MAP
+        std::cout << "------ start of order ids: ------\n";
+        for(auto&[ order_id, order_it]: orderMap) {
+            std::cout << *order_it << std::endl;
+        }
+        std::cout << "------  end of order ids   ------\n";
+#endif
         if ( orderMap.find( orderId ) == orderMap.end() ) {
             return {};
         }
@@ -112,6 +120,7 @@ public:
                 askSideSize += order.size;
                 if ( askBook.find( order.price ) == askBook.end() ) {
                     askBook[order.price] = L3PriceLevel{ std::vector<Order>{ order } };
+                    orderMap[ order.orderId ] = askBook[order.price].orders.begin();
                 } else {
                     auto it = askBook[order.price].addNewOrder( order );
                     orderMap[order.orderId] = it;
@@ -152,6 +161,7 @@ public:
                 bidSideSize += order.size;
                 if ( bidBook.find( order.price ) == bidBook.end() ) {
                     bidBook[order.price] = L3PriceLevel{ std::vector<Order>{ order }};
+                    orderMap[ order.orderId ] = bidBook[order.price].orders.begin();
                 } else {
                     auto it = bidBook[order.price].addNewOrder( order );
                     orderMap[ order.orderId ] = it;
@@ -176,18 +186,6 @@ public:
                         it = askBook.erase(it);
                         askSideSize -= best_ask_size;
                     } else {    // this level will not be filled
-                        // while (true) {
-                        //     auto& front_order = it->second.orders.front();
-                        //     if( order.size > front_order.size ) {
-                        //         const auto poped_id = it->second.orders.front().orderId;
-                        //         order.size -= front_order.size;
-                        //         it->second.orders.pop_front();
-                        //         orderMap.erase( poped_id );
-                        //     } else {
-                        //         it->second.orders.front().size -= order.size;
-                        //         break;
-                        //     }
-                        // }
                         askSideSize -= ( it->second ).matchOrder( order, orderMap );
                         return true;
                     }
@@ -212,7 +210,18 @@ public:
     // true: cancelled, false: cancel fail
     virtual bool cancelOrder( const Order& order )
     {
-        return false;
+        if (orderMap.find( order.orderId ) == orderMap.end() ) {
+            return false;
+        }
+        auto it = orderMap[ order.orderId ];
+        if (order.isSell) {
+            auto& L3Level = askBook[ order.price ];
+            L3Level.orders.erase( it );
+        } else{
+            auto& L3Level = bidBook[ order.price ];
+            L3Level.orders.erase( it );
+        }
+        return true;
     }
 
     L3Book( std::vector<Order>& orders )
