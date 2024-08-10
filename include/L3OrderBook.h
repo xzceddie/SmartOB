@@ -31,6 +31,33 @@ private:
     size_t askSideSize = 0;
 
 public:
+
+    /**
+     * @brief a custom copy constructor is necessary to deal with the iterator problem
+     *        If trivially copied, the copied iterators will point to the original object
+     */
+    L3Book( const L3Book& rhs )
+    : bidBook { rhs.bidBook }
+    , askBook { rhs.askBook }
+    , bidSideSize { rhs.bidSideSize }
+    , askSideSize { rhs.askSideSize }
+    {
+        for( auto&[ ind, it ]: rhs.orderMap ) {
+            const double px = it->price;
+            
+            // L3PriceLevel<BuffType> rhs_lvl;;
+            // L3PriceLevel<BuffType> lvl;
+            
+            if (it -> isSell) {
+                // rhs_lvl = rhs.askBook[px];
+                orderMap[ind] = askBook[px].orders.begin() + ( it - rhs.askBook.at(px).orders.begin() );
+            } else {
+                // rhs_lvl = rhs.bidBook[px];
+                orderMap[ind] = bidBook[px].orders.begin() + ( it - rhs.bidBook.at(px).orders.begin() );
+            }
+        }
+    }
+
     size_t getBidSideSize() const
     {
         return bidSideSize;

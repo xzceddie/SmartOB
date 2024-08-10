@@ -121,7 +121,7 @@ private:
 
 public:
     dBuffer()
-    : mBuffer( 1 )
+    : mBuffer( 4 )
     {
     }
     template <typename... Args>
