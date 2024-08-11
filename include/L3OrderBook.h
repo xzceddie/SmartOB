@@ -201,6 +201,8 @@ public:
 public:
     L3Book() = default;
 
+    bool pureNewOrder( Order& order );
+    
     // true: aggressive, false: not aggressive
     bool newOrder( Order& order );
     // {
@@ -397,6 +399,7 @@ public:
      */
     void applyTrade( Trade& trade )
     {
+
         for ( auto& listener: listeners ) {
             listener->onTradeMsg( this, trade );
         }
@@ -435,7 +438,7 @@ public:
                                                      IdGenNeg::getInstance().genId(),
                                                      2 * recored_trds_vol[trd_px],
                                                      last_unconsumed_lvl ) ) ;
-                        newOrder( tmp_order );
+                        pureNewOrder( tmp_order );
                         // newOrder( Order( fmt::format("N {} 1 {} {}", 
                         //                              IdGenNeg::getInstance().genId(),
                         //                              2 * recored_trds_vol[trd_px],
@@ -456,7 +459,7 @@ public:
                                                      IdGenNeg::getInstance().genId(),
                                                      trd_qty,
                                                      best_bid_px ) );
-                        newOrder( tmp_order );
+                        pureNewOrder( tmp_order );
                         // newOrder( Order( fmt::format("N {} 1 {} {}", 
                         //                              IdGenNeg::getInstance().genId(),
                         //                              trd_qty,
@@ -467,7 +470,7 @@ public:
                                                      IdGenNeg::getInstance().genId(),
                                                      3 * trd_qty,
                                                      best_bid_px ) ) ;
-                        newOrder( tmp_order );
+                        pureNewOrder( tmp_order );
                         // newOrder( Order( fmt::format("N {} 1 {} {}", 
                         //                              IdGenNeg::getInstance().genId(),
                         //                              3 * trd_qty,
@@ -487,7 +490,7 @@ public:
                                       IdGenNeg::getInstance().genId(),
                                       total_trd_vol, 
                                       trade.price[0] ) );
-                newOrder( tmp_order );
+                pureNewOrder( tmp_order );
                 // newOrder( fmt::format("N {} 1 {} {}", 
                 //                       IdGenNeg::getInstance().genId(),
                 //                       total_trd_vol, 
@@ -497,7 +500,7 @@ public:
                                       IdGenNeg::getInstance().genId(),
                                       2 * total_trd_vol, 
                                       best_bid_px ) );
-                newOrder( tmp_order_ );
+                pureNewOrder( tmp_order_ );
                 // newOrder( fmt::format("N {} 1 {} {}", 
                 //                       IdGenNeg::getInstance().genId(),
                 //                       2 * total_trd_vol, 
@@ -506,6 +509,8 @@ public:
         } else {
             // Seller is the liquidity taker
             const auto best_ask_px = getBestAsk().price;
+            // spdlog::debug("book: \n{}", this->toString());
+            // spdlog::debug( "best ask px: {}", best_ask_px );
             const int lvl_cnt = trade.getLvlCnt();
 
             if (lvl_cnt == 1) {
@@ -522,7 +527,7 @@ public:
                                                      IdGenNeg::getInstance().genId(),
                                                      2 * recored_trds_vol[trd_px],
                                                      last_unconsumed_lvl ) );
-                        newOrder( tmp_order );
+                        pureNewOrder( tmp_order );
                         // newOrder( Order( fmt::format("N {} 0 {} {}", 
                         //                              IdGenNeg::getInstance().genId(),
                         //                              2 * recored_trds_vol[trd_px],
@@ -538,7 +543,7 @@ public:
                                                      IdGenNeg::getInstance().genId(),
                                                      trd_qty,
                                                      best_ask_px ) );
-                        newOrder( tmp_order );
+                        pureNewOrder( tmp_order );
                         // newOrder( Order( fmt::format("N {} 0 {} {}", 
                         //                              IdGenNeg::getInstance().genId(),
                         //                              trd_qty,
@@ -549,7 +554,7 @@ public:
                                                      IdGenNeg::getInstance().genId(),
                                                      3 * trd_qty,
                                                      best_ask_px ) );
-                        newOrder( tmp_order );
+                        pureNewOrder( tmp_order );
                         // newOrder( Order( fmt::format("N {} 0 {} {}", 
                         //                              IdGenNeg::getInstance().genId(),
                         //                              3 * trd_qty,
@@ -568,7 +573,7 @@ public:
                                       IdGenNeg::getInstance().genId(),
                                       total_trd_vol, 
                                       trade.price[trade.getLvlCnt()-1] ) );
-                newOrder( tmp_order );
+                pureNewOrder( tmp_order );
                 // newOrder( fmt::format("N {} 0 {} {}", 
                 //                       IdGenNeg::getInstance().genId(),
                 //                       total_trd_vol, 
@@ -578,7 +583,7 @@ public:
                                       IdGenNeg::getInstance().genId(),
                                       2 * total_trd_vol, 
                                       best_ask_px ) );
-                newOrder( tmp_order );
+                pureNewOrder( tmp_order );
                 // newOrder( fmt::format("N {} 0 {} {}", 
                 //                       IdGenNeg::getInstance().genId(),
                 //                       2 * total_trd_vol, 

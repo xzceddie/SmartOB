@@ -6,21 +6,10 @@
 
 namespace sob {
 
-
-// true: aggressive, false: not aggressive
+// new order but do not notify
 template <template <typename T, typename AllocT=std::allocator<T> > class BuffType>
-bool L3Book<BuffType>::newOrder( Order& order )
+bool L3Book<BuffType>::pureNewOrder( Order& order )
 {
-    assert( !order.isCancel() );
-    // assert( !order.isReprice() );
-
-    // notify listeners before book has updated
-    if( ( !order.isReprice() ) && ( !order.isCancel() ) ) {
-        for( auto& listener: listeners ) {
-            listener->onBookUpdate( this, order );
-        }
-    }
-
     if( order.isSell ) {
         if ( bidBook.empty() || order.price > getBestBid().price ) {
             // Not aggressive/cross/market Order, quote orders only
@@ -104,6 +93,24 @@ bool L3Book<BuffType>::newOrder( Order& order )
             return true;
         }
     }
+}
+
+
+// true: aggressive, false: not aggressive
+template <template <typename T, typename AllocT=std::allocator<T> > class BuffType>
+bool L3Book<BuffType>::newOrder( Order& order )
+{
+    assert( !order.isCancel() );
+    // assert( !order.isReprice() );
+
+    // notify listeners before book has updated
+    if( ( !order.isReprice() ) && ( !order.isCancel() ) ) {
+        for( auto& listener: listeners ) {
+            listener->onBookUpdate( this, order );
+        }
+    }
+
+    return pureNewOrder( order );
 }
 
 
