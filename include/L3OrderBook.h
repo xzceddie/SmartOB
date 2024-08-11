@@ -70,6 +70,25 @@ public:
         }
     }
 
+    auto& operator= ( const L3Book<BuffType>& rhs )
+    {
+        bidBook = rhs.bidBook;
+        askBook = rhs.askBook;
+        bidSideSize = rhs.bidSideSize;
+        askSideSize = rhs.askSideSize;
+        for( auto&[ ind, it ]: rhs.orderMap ) {
+            const double px = it->price;
+            if (it -> isSell) {
+                orderMap[ind] = std::next(askBook[px].orders.begin(),
+                                          std::distance( static_cast<typename BuffType<Order>::iterator>(it), rhs.askBook.at(px).orders.begin()));
+            } else {
+                orderMap[ind] = std::next(bidBook[px].orders.begin(),
+                                          std::distance( static_cast<typename BuffType<Order>::iterator>(it), rhs.bidBook.at(px).orders.begin()));
+            }
+        }
+        return *this;
+    }
+
     size_t getBidSideSize() const
     {
         return bidSideSize;
@@ -341,10 +360,15 @@ public:
         }
     }
 
+    // TODO: implement this one
+    void applySnapShot( L2Book& snapshot )
+    {
+    }
+
     /**
      *  @brief  Happens when trade stream leads L3 Order Stream and L2 Snapshot Stream
      */
-    void applyUnseenTrade( Trade& trade )
+    void applyTrade( Trade& trade )
     {
         if( trade.isSell ) {
             // Seller is the liquidity taker

@@ -33,12 +33,25 @@ private:
     int receivedTradeCnt{};
     int receivedSnapShotCnt{};
 
+    SyncMode mode = SyncMode::SYNCHRONOUS; // this stores the most up-to-date synchronous status
+    SyncMode lastMode = SyncMode::SYNCHRONOUS;
+
 public:
     Synchronizer() = default;
 
     Synchronizer( std::shared_ptr<L3Book<BuffType>> book )
     : L3OrderBookListener<BuffType>( book )
     {}
+
+    SyncMode getSyncStatus() const
+    {
+        return mode;
+    }
+
+    SyncMode getLastSyncStatus() const
+    {
+        return lastMode;
+    }
     
     virtual SyncMode onBookUpdate( std::shared_ptr<L3Book<BuffType>>& book, const Order& order ) override
     {
@@ -50,27 +63,27 @@ public:
         }
 
         if( actualOrderCnt > actualSnapShotCnt + 1 && actualTradeCnt > actualSnapShotCnt + 1 ) {
-            return SyncMode::ORDER_IN_LEAD;
+            return mode = SyncMode::ORDER_IN_LEAD;
         }
-        return SyncMode::SYNCHRONOUS;
+        return mode = SyncMode::SYNCHRONOUS;
     }
     
     virtual SyncMode onTradeMsg( std::shared_ptr<L3Book<BuffType>>& book, const Trade& trade ) override
     {
         receivedTradeCnt++;
         if( actualTradeCnt < receivedTradeCnt ) {
-            return SyncMode::TRADE_IN_LEAD;
+            return mode = SyncMode::TRADE_IN_LEAD;
         }
-        return SyncMode::SYNCHRONOUS;
+        return mode = SyncMode::SYNCHRONOUS;
     }
 
     virtual SyncMode onSnapShotMsg( std::shared_ptr<L3Book<BuffType>>& book ) override
     {
         receivedSnapShotCnt++;
         if( actualSnapShotCnt < actualSnapShotCnt ) {
-            return SyncMode::SNAPSHOT_IN_LEAD;
+            return mode = SyncMode::SNAPSHOT_IN_LEAD;
         }
-        return SyncMode::SYNCHRONOUS;
+        return mode = SyncMode::SYNCHRONOUS;
     }
 }; // class Synchronizer
 
@@ -85,13 +98,102 @@ template <template <typename T, typename AllocT=std::allocator<T> > class BuffTy
 class SmartOrderBook
 {
 private:
-    L3Book<BuffType> bookGroundTruth;
-    L3Book<BuffType> bookTrade;
-    L3Book<BuffType> bookSnapShot;
+    std::shared_ptr<L3Book<BuffType>> bookGroundTruth;
+    std::shared_ptr<L3Book<BuffType>> bookTrade;
+    std::shared_ptr<L3Book<BuffType>> bookSnapShot;
 
     Synchronizer<BuffType> synchronizer;
 
     bool doGuess{ true };
+
+    std::shared_ptr<L3OrderBookListener<BuffType>> leaderBook;
+
+public:
+    // synchronizer should subscribe to all three books
+    SmartOrderBook()
+    {
+        synchronizer.subscribe( bookGroundTruth );
+        synchronizer.subscribe( bookTrade );
+        synchronizer.subscribe( bookSnapShot );
+    }
+
+    auto applyOrder( Order& order )
+    {
+        return bookGroundTruth->applyOrder( order );
+    }
+
+    auto applyTrade( Trade& trade )
+    {
+        return bookTrade->applyTrade( trade );
+    }
+
+    auto applySnapShot( L2Book& snapshot )
+    {
+        return bookSnapShot->applySnapShot( snapshot );
+    }
+
+    
+    void applyMessage( const std::string& str )
+    {
+        if( doGuess ) {
+            if ( str[0] == 'N' || str[0] == 'C' || str[0] == 'C' ) {
+                Order order{ str };
+                applyOrder( order );
+            } else if ( str[0] == 'T' ) {
+                Trade trade{ str };
+                applyTrade( trade );
+            } else if ( str[0] == 'S' ) {
+                L2Book snapshot{ str };
+                applySnapShot( snapshot );
+            }
+
+            auto status = synchronizer.getSyncStatus();
+            auto last_status = synchronizer.getLastSyncStatus();
+
+            if (status == SyncMode::SYNCHRONOUS) {
+                leaderBook = bookGroundTruth;
+                if( last_status == SyncMode::ORDER_IN_LEAD ) {
+                    *bookTrade = *bookGroundTruth;
+                    *bookSnapShot = *bookGroundTruth;
+                }
+            }
+
+            else if( status == SyncMode::ORDER_IN_LEAD ) {
+                leaderBook = bookGroundTruth;
+            }
+
+            else if( status == SyncMode::TRADE_IN_LEAD ) {
+                leaderBook = bookTrade;
+            }
+
+            else if( status == SyncMode::SNAPSHOT_IN_LEAD ) {
+                leaderBook = bookSnapShot;
+            }
+
+            // if ( status == SyncMode::ORDER_IN_LEAD ) {
+            //     leaderBook = bookGroundTruth;
+            // } else if ( status == SyncMode::TRADE_IN_LEAD ) {
+            //     leaderBook = bookTrade;
+            // } else if ( status == SyncMode::SNAPSHOT_IN_LEAD ) {
+            //     leaderBook = bookSnapShot;
+            // }
+            
+        } else {
+            if ( str[0] == 'N' || str[0] == 'C' || str[0] == 'C' ) {
+                Order order{ str };
+                applyOrder( order );
+            }
+        }
+    }
+
+    std::shared_ptr<L3Book<BuffType>> getLeaderBook() const
+    {
+        // noGuess: always return the most accurate book, i.e., bookGroundTruth
+        if ( !doGuess ) {
+            return bookGroundTruth;
+        }
+        return leaderBook;
+    }
 }; // class SmartOrderBook
 
 
