@@ -412,6 +412,9 @@ public:
             if (lvl_cnt == 1) {
                 const auto trd_px = trade.price[0];
                 
+                static std::unordered_map<double, int> recored_trds_vol;
+                static double last_unconsumed_lvl = 0;
+
                 if( trd_px > best_bid_px ) {
                     /* *******************************************
                      * There has to be some new bid orders at the trd_px which haven't arrived
@@ -421,10 +424,8 @@ public:
                      * !!! We can't have an accurate guess about how much liquidity there is left on that level, 
                      * !!! therefore we hold on the guess until that level has been totally consumed
                      * *******************************************/
-                    static std::unordered_map<double, int> recored_trds_vol;
-                    static double last_unconsumed_lvl = 0;
 
-                    if ( trd_px == last_unconsumed_lvl ) {
+                    if ( last_unconsumed_lvl == 0 || trd_px == last_unconsumed_lvl ) {
                         recored_trds_vol[trd_px] += trade.getTotalVol();
                     } else {
                         /* *******************************************
@@ -439,13 +440,9 @@ public:
                                                      2 * recored_trds_vol[trd_px],
                                                      last_unconsumed_lvl ) ) ;
                         pureNewOrder( tmp_order );
-                        // newOrder( Order( fmt::format("N {} 1 {} {}", 
-                        //                              IdGenNeg::getInstance().genId(),
-                        //                              2 * recored_trds_vol[trd_px],
-                        //                              last_unconsumed_lvl ) ) );
                         recored_trds_vol.erase( last_unconsumed_lvl );
-                        last_unconsumed_lvl = trd_px;
                     }
+                    last_unconsumed_lvl = trd_px;
                 } else if ( trd_px == best_bid_px ) {
                     /* *******************************************
                      * This has been a very logical trade message, we should just reflect the information in the orderbook
@@ -460,10 +457,6 @@ public:
                                                      trd_qty,
                                                      best_bid_px ) );
                         pureNewOrder( tmp_order );
-                        // newOrder( Order( fmt::format("N {} 1 {} {}", 
-                        //                              IdGenNeg::getInstance().genId(),
-                        //                              trd_qty,
-                        //                              best_bid_px ) ) );
                     } else {
                         // trade quantity + not yet received aggresive orders
                         Order tmp_order( fmt::format("N {} 1 {} {}", 
@@ -471,10 +464,16 @@ public:
                                                      3 * trd_qty,
                                                      best_bid_px ) ) ;
                         pureNewOrder( tmp_order );
-                        // newOrder( Order( fmt::format("N {} 1 {} {}", 
-                        //                              IdGenNeg::getInstance().genId(),
-                        //                              3 * trd_qty,
-                        //                              best_bid_px ) ) );
+                    }
+
+                    if( last_unconsumed_lvl > best_bid_px ) {
+                        Order tmp_order( fmt::format("N {} 1 {} {}", 
+                                                     IdGenNeg::getInstance().genId(),
+                                                     2 * recored_trds_vol[last_unconsumed_lvl],
+                                                     last_unconsumed_lvl ) ) ;
+                        pureNewOrder( tmp_order );
+                        recored_trds_vol.erase( last_unconsumed_lvl );
+                        last_unconsumed_lvl = 0;
                     }
                     
                 } else {
@@ -491,50 +490,38 @@ public:
                                       total_trd_vol, 
                                       trade.price[0] ) );
                 pureNewOrder( tmp_order );
-                // newOrder( fmt::format("N {} 1 {} {}", 
-                //                       IdGenNeg::getInstance().genId(),
-                //                       total_trd_vol, 
-                //                       trade.price[0] ) );
 
                 Order tmp_order_( fmt::format("N {} 1 {} {}", 
                                       IdGenNeg::getInstance().genId(),
                                       2 * total_trd_vol, 
                                       best_bid_px ) );
                 pureNewOrder( tmp_order_ );
-                // newOrder( fmt::format("N {} 1 {} {}", 
-                //                       IdGenNeg::getInstance().genId(),
-                //                       2 * total_trd_vol, 
-                //                       best_bid_px ) );
             }
         } else {
             // Seller is the liquidity taker
             const auto best_ask_px = getBestAsk().price;
-            // spdlog::debug("book: \n{}", this->toString());
-            // spdlog::debug( "best ask px: {}", best_ask_px );
             const int lvl_cnt = trade.getLvlCnt();
 
             if (lvl_cnt == 1) {
                 const auto trd_px = trade.price[0];
                 
+                static std::unordered_map<double, int> recorded_trds_vol_;
+                static double last_unconsumed_lvl_ = 0;
+                // spdlog::warn("last_unconsumed_lvl_ = {}", last_unconsumed_lvl_);
                 if( trd_px < best_ask_px ) {
-                    static std::unordered_map<double, int> recored_trds_vol;
-                    static double last_unconsumed_lvl = 0;
 
-                    if ( trd_px == last_unconsumed_lvl ) {
-                        recored_trds_vol[trd_px] += trade.getTotalVol();
+                    if ( last_unconsumed_lvl_ == 0 || trd_px == last_unconsumed_lvl_ ) {
+                        recorded_trds_vol_[trd_px] += trade.getTotalVol();
                     } else {
                         Order tmp_order( fmt::format("N {} 0 {} {}", 
                                                      IdGenNeg::getInstance().genId(),
-                                                     2 * recored_trds_vol[trd_px],
-                                                     last_unconsumed_lvl ) );
+                                                     2 * recorded_trds_vol_[trd_px],
+                                                     last_unconsumed_lvl_ ) );
                         pureNewOrder( tmp_order );
-                        // newOrder( Order( fmt::format("N {} 0 {} {}", 
-                        //                              IdGenNeg::getInstance().genId(),
-                        //                              2 * recored_trds_vol[trd_px],
-                        //                              last_unconsumed_lvl ) ) );
-                        recored_trds_vol.erase( last_unconsumed_lvl );
-                        last_unconsumed_lvl = trd_px;
+                        recorded_trds_vol_.erase( last_unconsumed_lvl_ );
                     }
+                    last_unconsumed_lvl_ = trd_px;
+
                 } else if ( trd_px == best_ask_px ) {
                     const auto trd_qty = trade.getTotalVol();
                     if ( trd_qty < getBestBid().quantity ) {
@@ -544,10 +531,6 @@ public:
                                                      trd_qty,
                                                      best_ask_px ) );
                         pureNewOrder( tmp_order );
-                        // newOrder( Order( fmt::format("N {} 0 {} {}", 
-                        //                              IdGenNeg::getInstance().genId(),
-                        //                              trd_qty,
-                        //                              best_ask_px ) ) );
                     } else {
                         // trade quantity + not yet received aggresive orders
                         Order tmp_order( fmt::format("N {} 0 {} {}", 
@@ -555,10 +538,17 @@ public:
                                                      3 * trd_qty,
                                                      best_ask_px ) );
                         pureNewOrder( tmp_order );
-                        // newOrder( Order( fmt::format("N {} 0 {} {}", 
-                        //                              IdGenNeg::getInstance().genId(),
-                        //                              3 * trd_qty,
-                        //                              best_ask_px ) ) );
+                    }
+
+                    if( last_unconsumed_lvl_ < best_ask_px ) {
+                        // spdlog::warn("i am here, last_unconsumed_lvl_ = {}", last_unconsumed_lvl_);
+                        Order tmp_order( fmt::format("N {} 0 {} {}", 
+                                                     IdGenNeg::getInstance().genId(),
+                                                     2 * recorded_trds_vol_[last_unconsumed_lvl_],
+                                                     last_unconsumed_lvl_ ) ) ;
+                        pureNewOrder( tmp_order );
+                        recorded_trds_vol_.erase( last_unconsumed_lvl_ );
+                        last_unconsumed_lvl_ = 0;
                     }
                     
                 } else {
@@ -574,20 +564,12 @@ public:
                                       total_trd_vol, 
                                       trade.price[trade.getLvlCnt()-1] ) );
                 pureNewOrder( tmp_order );
-                // newOrder( fmt::format("N {} 0 {} {}", 
-                //                       IdGenNeg::getInstance().genId(),
-                //                       total_trd_vol, 
-                //                       trade.price[trade.getLvlCnt()-1] ) );
 
                 Order tmp_order_(fmt::format("N {} 0 {} {}", 
                                       IdGenNeg::getInstance().genId(),
                                       2 * total_trd_vol, 
                                       best_ask_px ) );
-                pureNewOrder( tmp_order );
-                // newOrder( fmt::format("N {} 0 {} {}", 
-                //                       IdGenNeg::getInstance().genId(),
-                //                       2 * total_trd_vol, 
-                //                       best_ask_px ) );
+                pureNewOrder( tmp_order_ );
             }
         }
     }
