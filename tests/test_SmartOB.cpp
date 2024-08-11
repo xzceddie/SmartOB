@@ -562,10 +562,10 @@ TEST_CASE( "test_SmartOrderBook_async_3(snapshot_leads)", "1" )
     SmartOB.applyMessage( o7 );
     SmartOB.applyMessage( s7 );
 
-    SmartOB.applyMessage( o8 );             //  snapshot in the lead
-    SmartOB.applyMessage( o9 );
-    SmartOB.applyMessage( o10 );
-    SmartOB.applyMessage( o11 );
+    SmartOB.applyMessage( s8 );             //  snapshot in the lead
+    SmartOB.applyMessage( s9 );
+    SmartOB.applyMessage( s10 );
+    SmartOB.applyMessage( s11 );
 
     /** SHOULD BE THE FOLLWING RIGHT NOW
      * L3Lvl{px=1.5, qty=50, #odr=1, odr={Odr{N, id=0, sell, sz=50, px=1.5}, }
@@ -580,17 +580,13 @@ TEST_CASE( "test_SmartOrderBook_async_3(snapshot_leads)", "1" )
                     SmartOB.getLeaderBook()->toString()
                  );
 
-    // SmartOB.applyMessage( o8 );
-    SmartOB.applyMessage( s8 );
+    SmartOB.applyMessage( o8 );
     SmartOB.applyMessage( t0 );
-    // SmartOB.applyMessage( o9 );
-    SmartOB.applyMessage( s9 );
+    SmartOB.applyMessage( o9 );
     SmartOB.applyMessage( t1 );
-    // SmartOB.applyMessage( o10 );
-    SmartOB.applyMessage( s10 );
+    SmartOB.applyMessage( o10 );
     SmartOB.applyMessage( t2 );
-    // SmartOB.applyMessage( o11 );
-    SmartOB.applyMessage( s11 );
+    SmartOB.applyMessage( o11 );
 
 
     spdlog::debug("[test_SmartOrderBook, 1] Constructed SmartOrderBook: \n{}",
@@ -672,9 +668,10 @@ TEST_CASE( "test_SmartOrderBook_async_3(order in the lead)", "1" )
     SmartOB.applyMessage( o7 );
     SmartOB.applyMessage( s7 );
 
-    SmartOB.applyMessage( s8 );             //  snapshot in the lead
-    SmartOB.applyMessage( s9 );
-    SmartOB.applyMessage( s10 );
+    SmartOB.applyMessage( o8 );             //  order in the lead
+    SmartOB.applyMessage( o9 );
+    SmartOB.applyMessage( o10 );
+    SmartOB.applyMessage( o11 );
 
     /** SHOULD BE THE FOLLWING RIGHT NOW
      * L3Lvl{px=1.5, qty=50, #odr=1, odr={Odr{N, id=0, sell, sz=50, px=1.5}, }
@@ -689,16 +686,12 @@ TEST_CASE( "test_SmartOrderBook_async_3(order in the lead)", "1" )
                     SmartOB.getLeaderBook()->toString()
                  );
 
-    SmartOB.applyMessage( o8 );
-    // SmartOB.applyMessage( s8 );
+    SmartOB.applyMessage( s8 );
     SmartOB.applyMessage( t0 );
-    SmartOB.applyMessage( o9 );
-    // SmartOB.applyMessage( s9 );
+    SmartOB.applyMessage( s9 );
     SmartOB.applyMessage( t1 );
-    SmartOB.applyMessage( o10 );
-    // SmartOB.applyMessage( s10 );
+    SmartOB.applyMessage( s10 );
     SmartOB.applyMessage( t2 );
-    SmartOB.applyMessage( o11 );
     SmartOB.applyMessage( s11 );
 
 

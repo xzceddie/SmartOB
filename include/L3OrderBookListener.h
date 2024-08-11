@@ -25,20 +25,9 @@ public:
         subscribe( book );
     }
 
-    virtual void onBookUpdate()
-    {};
-    // void onBookUpdate( std::shared_ptr<L3Book<BuffType>>& ) {};
-    // void onBookUpdate( std::shared_ptr<L3Book<BuffType>>&, const Order& order ) = 0;
-    virtual void onBookUpdate( L3Book<BuffType>*, const Order& order ) = 0;
-    virtual void onBookUpdate( L3Book<BuffType>& )
-    {};
-    virtual void onBookUpdate( const L3Book<BuffType>& )
-    {};
-
-    // void onTradeMsg( std::shared_ptr<L3Book<BuffType>>& book, const Trade& trade ) = 0;
+    virtual void onBookUpdate( L3Book<BuffType>* book, const Order& order ) = 0;
     virtual void onTradeMsg( L3Book<BuffType>* book, const Trade& trade ) = 0;
-    // void onSnapShotMsg( std::shared_ptr<L3Book<BuffType>>& book ) = 0;
-    virtual void onSnapShotMsg( L3Book<BuffType>* book, L2Book& ) = 0;
+    virtual void onSnapShotMsg( L3Book<BuffType>* book, L2Book& snapshot ) = 0;
 
 }; // class L3OrderBookListener
 
