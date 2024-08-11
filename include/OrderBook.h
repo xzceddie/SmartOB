@@ -141,8 +141,22 @@ public:
         return ret;
     }
 
+    bool isAggressive( const Order& order ) const
+    {
+        if ( order.isSell ) {
+            if ( bidBook.empty() || order.price > getBestBid().price ) {
+                return false;
+            }
+            return true;
+        } else {
+            if ( askBook.empty() || order.price < getBestAsk().price ) {
+                return false;
+            }
+            return true;
+        }
+    }
+
     // @return  true if took liquidity, false if added liquidity
-    // TODO: implement match logics
     bool newOrder( Order& order )
     {
         // assert( !order.isCancel() );

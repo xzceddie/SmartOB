@@ -120,6 +120,22 @@ public:
         return askBook.begin()->second.toL2PriceLevel();
     }
 
+    bool isAggressive( const Order& order ) const
+    {
+        if ( order.isSell ) {
+            if ( bidBook.empty() || order.price > getBestBid().price ) {
+                return false;
+            }
+            return true;
+        } else {
+            if ( askBook.empty() || order.price < getBestAsk().price ) {
+                return false;
+            }
+            return true;
+        }
+    }
+
+
     void prtOrderMap()
     {
         std::cout << "------ start of order ids: ------\n";
@@ -147,7 +163,7 @@ public:
     L3Book() = default;
 
     // true: aggressive, false: not aggressive
-    virtual bool newOrder( Order& order )
+    bool newOrder( Order& order )
     {
         assert( !order.isCancel() );
         // assert( !order.isReprice() );
@@ -238,7 +254,7 @@ public:
     }
 
     // true: reprice success, false: reprice fail
-    virtual bool modifyOrder( const Order& order )
+    bool modifyOrder( const Order& order )
     {
         if ( (!order.isReprice()) || ( orderMap.find( *order.oldId ) == orderMap.end() ) ) {
             return false;
@@ -256,7 +272,7 @@ public:
     }
 
     // TODO: change the L3Level.orders.erase(it) to something better, i.e. mark an order is canceled
-    virtual bool cancelId( const int id )
+    bool cancelId( const int id )
     {
         if( orderMap.find( id ) == orderMap.end() ) {
             return false;
@@ -281,7 +297,7 @@ public:
 
     // TODO: Implement cancelOrder
     // true: cancelled, false: cancel fail
-    virtual bool cancelOrder( const Order& order )
+    bool cancelOrder( const Order& order )
     {
         if (!order.isCancel()) {
             return false;
