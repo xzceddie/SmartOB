@@ -39,7 +39,8 @@ private:
     size_t bidSideSize = 0;
     size_t askSideSize = 0;
 
-    std::vector<std::shared_ptr<L3OrderBookListener<BuffType>>> listeners;
+    // std::vector<std::shared_ptr<L3OrderBookListener<BuffType>>> listeners;
+    std::vector<L3OrderBookListener<BuffType>*> listeners;
 
 public:
 
@@ -154,7 +155,8 @@ public:
 
     void accept( L3OrderBookListener<BuffType>* listener )
     {
-        listeners.push_back( std::shared_ptr<L3OrderBookListener<BuffType>>( listener ) );
+        // listeners.push_back( std::shared_ptr<L3OrderBookListener<BuffType>>( listener ) );
+        listeners.push_back( listener );
     }
 
     bool isAggressive( const Order& order ) const
@@ -385,6 +387,9 @@ public:
     // TODO: implement this one
     void applySnapShot( L2Book& snapshot )
     {
+        for ( auto& listener: listeners ) {
+            listener->onSnapShotMsg( this, snapshot );
+        }
     }
 
     /**
@@ -392,6 +397,10 @@ public:
      */
     void applyTrade( Trade& trade )
     {
+        for ( auto& listener: listeners ) {
+            listener->onTradeMsg( this, trade );
+        }
+
         if( trade.isSell ) {
             // Seller is the liquidity taker
             const auto best_bid_px = getBestBid().price;

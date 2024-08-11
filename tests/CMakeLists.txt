@@ -28,3 +28,8 @@ add_executable( test_CopyBook test_CopyBook.cpp )
 find_package( Boost REQUIRED COMPONENTS system )
 target_link_libraries( test_CopyBook PUBLIC Catch2::Catch2WithMain Boost::system IdGen L3OrderBook)
 add_test( NAME test_CopyBook COMMAND test_CopyBook )
+
+add_executable( test_SmartOB test_SmartOB.cpp )
+find_package( Boost REQUIRED COMPONENTS system )
+target_link_libraries( test_SmartOB PUBLIC Catch2::Catch2WithMain Boost::system IdGen L3OrderBook)
+add_test( NAME test_SmartOB COMMAND test_SmartOB )

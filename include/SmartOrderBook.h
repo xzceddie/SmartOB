@@ -55,6 +55,7 @@ public:
     
     virtual void onBookUpdate( L3Book<BuffType>* book, const Order& order ) override
     {
+        spdlog::debug( "onBookUpdate" );
         actualOrderCnt++;
         actualSnapShotCnt++;
         
@@ -72,6 +73,7 @@ public:
     
     virtual void onTradeMsg( L3Book<BuffType>* book, const Trade& trade ) override
     {
+        spdlog::debug( "onTradeMsg" );
         receivedTradeCnt++;
         if( actualTradeCnt < receivedTradeCnt ) {
             // return mode = SyncMode::TRADE_IN_LEAD;
@@ -81,8 +83,9 @@ public:
         mode = SyncMode::SYNCHRONOUS;
     }
 
-    virtual void onSnapShotMsg( L3Book<BuffType>* book ) override
+    virtual void onSnapShotMsg( L3Book<BuffType>* book, L2Book& ) override
     {
+        spdlog::debug( "onSnapShotMsg" );
         receivedSnapShotCnt++;
         if( actualSnapShotCnt < actualSnapShotCnt ) {
             // return mode = SyncMode::SNAPSHOT_IN_LEAD;
@@ -117,6 +120,10 @@ private:
 public:
     // synchronizer should subscribe to all three books
     SmartOrderBook()
+    : bookGroundTruth { std::make_shared<L3Book<BuffType>>() }
+    , bookTrade { std::make_shared<L3Book<BuffType>>() }
+    , bookSnapShot { std::make_shared<L3Book<BuffType>>() }
+    , leaderBook { std::make_shared<L3Book<BuffType>>() }
     {
         synchronizer.subscribe( bookGroundTruth );
         synchronizer.subscribe( bookTrade );
@@ -139,6 +146,13 @@ public:
     }
 
     
+    void applyMessages( const std::vector<std::string>& msgs )
+    {
+        for( auto& msg : msgs ) {
+            applyMessage( msg );
+        }
+    }
+
     void applyMessage( const std::string& str )
     {
         if( doGuess ) {
