@@ -165,6 +165,12 @@ public:
                     }
 
                 }
+
+                if( order.size != 0 ) {
+                    // All bid levels has been consumed, added a new level in the ask book
+                    askBook[order.price] = L2PriceLevel{order.price, order.size};
+                    askSideSize += order.size;
+                }
             }
             return true;
         } else {
@@ -195,6 +201,12 @@ public:
                         askSideSize -= (it -> second).matchOrder( order );
                         return true;
                     }
+                }
+
+                if( order.size != 0 ) {
+                    // All ask levels has been consumed, added a new level in the bid book
+                    bidBook[order.price] = L2PriceLevel{order.price, order.size};
+                    bidSideSize += order.size;
                 }
             }
             return true;

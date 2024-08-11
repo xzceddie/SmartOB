@@ -7,6 +7,10 @@ add_executable( test_OrderBook test_OrderBook.cpp )
 find_package( Boost REQUIRED COMPONENTS system )
 target_link_libraries( test_OrderBook PUBLIC Catch2::Catch2 Catch2::Catch2WithMain Boost::system)
 
+add_executable( test_L3OrderBook test_L3OrderBook.cpp )
+find_package( Boost REQUIRED COMPONENTS system )
+target_link_libraries( test_L3OrderBook PUBLIC Catch2::Catch2 Catch2::Catch2WithMain Boost::system)
+
 add_executable( test_CopyBook test_CopyBook.cpp )
 find_package( Boost REQUIRED COMPONENTS system )
 target_link_libraries( test_CopyBook PUBLIC Catch2::Catch2 Catch2::Catch2WithMain Boost::system)
