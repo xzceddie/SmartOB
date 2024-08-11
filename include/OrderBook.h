@@ -284,7 +284,7 @@ public:
 
     /**
      * example msg: 
-     *  S 5@1.0X1.1@2 6@0.9X1.2@1
+     *  "S 3(bid book depth) 3(ask book depth) 1.0(px) 5(sz) 1.1(px) 2(sz) 1.2 10 1.3 20 1.4 5 1.5 6"
      */
     L2Book( const std::string& msg )
     {
@@ -294,23 +294,36 @@ public:
         std::stringstream ss(msg);
 
         std::string tmp;
+        int bid_depth, ask_depth;
+        ss >> tmp >> bid_depth >> ask_depth;
 
-        ss >> tmp;
 
-        while( !ss.eof() ) {
-            L2PriceLevel bid, ask;
-            double bidPx, askPx;
-            int bidSz, askSz;
-            char at1, X, at2;
-
-            ss >> bidPx >> at1 >> bidSz >> X >> askPx >> at2 >> askSz;
-            bid = L2PriceLevel{bidPx, bidSz};
-            ask = L2PriceLevel{askPx, askSz};
-            
-            bidBook[bid.price] = bid;
-            askBook[ask.price] = ask;
+        for ( int i=0; i < bid_depth; i++ ) {
+            double px;
+            int sz;
+            ss >> px >> sz;
+            bidBook[px] = L2PriceLevel{px, sz};
         }
-        
+
+        for ( int i=0; i < ask_depth; i++ ) {
+            double px;
+            int sz;
+            ss >> px >> sz;
+            askBook[px] = L2PriceLevel{px, sz};
+        }
+    }
+
+    std::string to_simple_string() const
+    {
+        std::stringstream ss;
+        ss << "S " << bidBook.size() << " " << askBook.size() << " ";
+        for ( const auto& [px, level] : bidBook ) {
+            ss << px << " " << level.quantity << " ";
+        }
+        for ( const auto& [px, level] : askBook ) {
+            ss << px << " " << level.quantity << " ";
+        }
+        return ss.str().substr(0, ss.str().size() - 1); // because we do not need the last ' '
     }
 }; // class L2Book
 
