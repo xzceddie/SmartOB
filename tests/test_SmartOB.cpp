@@ -296,12 +296,15 @@ TEST_CASE( "test_SmartOrderBook_async_2(trade-through)", "1" )
 
     std::string o7{"N 6 0 50 1.4"};
     std::string s7{"S 2 2 1.2 100 1.3 150 1.4 250 1.5 100"};
+    std::string t0{"T 0 1.4 50"};           // This is the first trade order that happens
 
     std::string o8{ "N 7 0 50 1.4" };
     std::string s8{ "S 2 2 1.2 100 1.3 150 1.4 200 1.5 100"};
+    std::string t1{"T 0 1.4 50"};
 
     std::string o9{ "N 8 0 250 1.5" };
     std::string s9{ "S 2 1 1.2 100 1.3 150 1.5 50"};
+    std::string t2{"T 0 1.4 200 1.5 50"};   // This is a trade-through
 
     std::string o10{ "N 8 0 200 1.4" };             // fail to fill
     std::string s10{ "S 2 2 1.2 100 1.3 150 1.4 200 1.5 50"};
@@ -309,9 +312,6 @@ TEST_CASE( "test_SmartOrderBook_async_2(trade-through)", "1" )
     std::string o11{ "N 8 0 300 1.4" };             // fail to fill
     std::string s11{ "S 2 2 1.2 100 1.3 150 1.4 500 1.5 50"};
     
-    std::string t0{"T 0 1.4 50"};           // This is the first trade order that happens
-    std::string t1{"T 0 1.4 50"};
-    std::string t2{"T 0 1.4 200 1.5 50"};   // This is a trade-through
 
     sob::SmartOrderBook SmartOB;
 

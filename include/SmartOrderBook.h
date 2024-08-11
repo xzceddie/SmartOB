@@ -63,7 +63,7 @@ public:
             actualTradeCnt++;
         }
 
-        if( actualOrderCnt > actualSnapShotCnt + 1 && actualTradeCnt > actualSnapShotCnt + 1 ) {
+        if( actualOrderCnt > receivedSnapShotCnt + 1 && actualOrderCnt > actualTradeCnt + 1 ) {
             // return mode = SyncMode::ORDER_IN_LEAD;
             lastMode = mode;
             mode = SyncMode::ORDER_IN_LEAD;
