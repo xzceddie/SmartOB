@@ -88,6 +88,6 @@ Three cases are considered
 
 ### Serialised Stream format
 **See `assets/` for reference**
-order: type{Normal{'N'}, cancel{'C'}, reprice{'R'}}, orderId, isSell {0, 1}, size, price, [oldId], [oldPx], [oldSz]
-trade: "T isSell{0, 1} [px0] [vol0] [px1] [vol1] ..." 
-snapshot: "S bidDepth askDepth [bid_px] [bid_sz] ... [ask_px] [ask_sz] ..."
+1. order: type{Normal{'N'}, cancel{'C'}, reprice{'R'}}, orderId, isSell {0, 1}, size, price, [oldId], [oldPx], [oldSz]
+2. trade: "T isSell{0, 1} [px0] [vol0] [px1] [vol1] ..." 
+3. snapshot: "S bidDepth askDepth [bid_px] [bid_sz] ... [ask_px] [ask_sz] ..."
