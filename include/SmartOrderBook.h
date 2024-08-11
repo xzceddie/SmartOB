@@ -150,6 +150,10 @@ public:
             auto status = synchronizer.getSyncStatus();
             auto last_status = synchronizer.getLastSyncStatus();
 
+            /**
+             *  @brief  when it is now anything but ORDER_IN_LEAD and last status is ORDER_IN_LEAD,
+             *              update bookTrade and bookSnapShot with the ground truth
+             */
             if (status == SyncMode::SYNCHRONOUS) {
                 leaderBook = bookGroundTruth;
                 if( last_status == SyncMode::ORDER_IN_LEAD ) {
@@ -164,19 +168,19 @@ public:
 
             else if( status == SyncMode::TRADE_IN_LEAD ) {
                 leaderBook = bookTrade;
+                if( last_status == SyncMode::ORDER_IN_LEAD ) {
+                    *bookTrade = *bookGroundTruth;
+                    *bookSnapShot = *bookGroundTruth;
+                }
             }
 
             else if( status == SyncMode::SNAPSHOT_IN_LEAD ) {
                 leaderBook = bookSnapShot;
+                if( last_status == SyncMode::ORDER_IN_LEAD ) {
+                    *bookTrade = *bookGroundTruth;
+                    *bookSnapShot = *bookGroundTruth;
+                }
             }
-
-            // if ( status == SyncMode::ORDER_IN_LEAD ) {
-            //     leaderBook = bookGroundTruth;
-            // } else if ( status == SyncMode::TRADE_IN_LEAD ) {
-            //     leaderBook = bookTrade;
-            // } else if ( status == SyncMode::SNAPSHOT_IN_LEAD ) {
-            //     leaderBook = bookSnapShot;
-            // }
             
         } else {
             if ( str[0] == 'N' || str[0] == 'C' || str[0] == 'C' ) {
@@ -195,8 +199,6 @@ public:
         return leaderBook;
     }
 }; // class SmartOrderBook
-
-
 
 
 } // namespace sob
