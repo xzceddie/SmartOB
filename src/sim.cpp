@@ -113,9 +113,9 @@ int main( int argc, char** argv )
             spdlog::info( "[::main] -- test passed --" );
         } else {
             spdlog::error( "[::main] -- test failed --" );
-            spdlog::info( "[::main] L3 res book: \n{}", l3_res_book.toString() );
-            spdlog::info( "[::main] aggregated L2 res book: \n{}", l3_res_book.agg().toString() );
-            spdlog::info( "[::main] L2 res book: \n{}", l2_res_book.toString() );
+            spdlog::error( "[::main] L3 res book: \n{}", l3_res_book.toString() );
+            spdlog::error( "[::main] aggregated L2 res book: \n{}", l3_res_book.agg().toString() );
+            spdlog::error( "[::main] L2 res book: \n{}", l2_res_book.toString() );
         }
     } else {
         if (vm.count("L2")) {
