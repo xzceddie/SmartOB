@@ -6,6 +6,10 @@
 #include <OrderBook.h>
 #include <common.h>
 #include <dBuffer.h>
+#include <Trade.h>
+#include <unordered_map>
+#include <spdlog/fmt/fmt.h>
+#include <IdGen.h>
 
 
 
@@ -15,7 +19,9 @@ template<typename LevelType, typename Comparator>
 using OneSideBook = std::map<double, LevelType, Comparator>;
 
 /**
- *  @brief  This is not a Template class;
+ *  @brief  An Orderbook that keeps information on all levels plus the order information
+ *          BuffType is the type of buffer used to hold all the orders on one level
+ *  @NOTE   This is not a Template class;
  */
 template <template <typename T, typename AllocT=std::allocator<T> > class BuffType = boost::circular_buffer>
 class L3Book
@@ -295,7 +301,6 @@ public:
         return true;
     }
 
-    // TODO: Implement cancelOrder
     // true: cancelled, false: cancel fail
     bool cancelOrder( const Order& order )
     {
@@ -319,6 +324,63 @@ public:
                 return { OrderType::Cancel, cancelOrder( order ) };
             case OrderType::Reprice:
                 return { OrderType::Reprice, modifyOrder( order ) };
+            default:
+                throw std::runtime_error( "unknown order type" );
+        }
+    }
+
+    /**
+     *  @brief  Happens when trade stream leads L3 Order Stream and L2 Snapshot Stream
+     */
+    void applyUnseenTrade( Trade& trade )
+    {
+        if( trade.isSell ) {
+            // Seller is the liquidity taker
+            const auto best_bid_px = getBestBid().price;
+            const int lvl_cnt = trade.getLvlCnt();
+
+            if (lvl_cnt == 1) {
+                const auto trd_px = trade.price[0];
+                
+                if( trd_px > best_bid_px ) {
+                    /* *******************************************
+                     * There has to be some new bid orders at the trd_px which haven't arrived
+                     * Then come this trade, initiated by some selling liquidity taker
+                     *
+                     * !!! There is most likely some liquidity left on the traded lvl
+                     * !!! We can't have an accurate guess about how much liquidity there is left on that level, 
+                     * !!! therefore we hold on the guess until that level has been totally consumed
+                     * *******************************************/
+                    static std::unordered_map<double, int> recored_trds_vol;
+                    static double last_unconsumed_lvl = 0;
+
+                    if ( trd_px == last_unconsumed_lvl ) {
+                        recored_trds_vol[trd_px] += trade.getTotalVol();
+                    } else {
+                        /* *******************************************
+                         * !!! Now the last_unconsumed_lvl has bee consumed;;
+                         * !!! We may now make a guess:
+                         *          That price level is now on the ask side
+                         *          The guessed ask side size is: 2 * ( recored_trds_vol[trd_px] + trade.getTotalVol() )
+                         *          For simplicity, we just guess that there is one order there
+                         * *******************************************/
+                        askSideSize += 2 * recored_trds_vol[trd_px] + trade.getTotalVol();
+                        newOrder( Order( fmt::format("N {} 1 {} {}", 
+                                                     IdGenNeg::getInstance().genId(),
+                                                     2 * recored_trds_vol[trd_px],
+                                                     last_unconsumed_lvl ) ) );
+                        recored_trds_vol.erase( last_unconsumed_lvl );
+                        last_unconsumed_lvl = trd_px;
+                    }
+                } else if ( trd_px == best_bid_px ) {
+                } else {
+                    throw std::runtime_error( "unexpected trade message, there has to have been out-of-order or lost trades" );
+                }
+            }
+            
+            
+
+        } else {
         }
     }
 
