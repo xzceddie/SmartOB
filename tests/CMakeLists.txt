@@ -9,6 +9,11 @@ find_package( Boost REQUIRED COMPONENTS system )
 target_link_libraries( test_IdGen PUBLIC Catch2::Catch2WithMain Boost::system IdGen)
 add_test( NAME test_IdGen COMMAND test_IdGen )
 
+add_executable( test_messages test_messages.cpp )
+find_package( Boost REQUIRED COMPONENTS system )
+target_link_libraries( test_messages PUBLIC Catch2::Catch2WithMain Boost::system IdGen)
+add_test( NAME test_messages COMMAND test_IdGen )
+
 add_executable( test_OrderBook test_OrderBook.cpp )
 find_package( Boost REQUIRED COMPONENTS system )
 target_link_libraries( test_OrderBook PUBLIC Catch2::Catch2WithMain Boost::system)

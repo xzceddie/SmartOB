@@ -281,6 +281,37 @@ public:
     , bidSideSize{ bidSideSize }
     , askSideSize{ askSideSize }
     {}
+
+    /**
+     * example msg: 
+     *  S 5@1.0X1.1@2 6@0.9X1.2@1
+     */
+    L2Book( const std::string& msg )
+    {
+        if ( msg[0] != 'S' ) {
+            throw std::runtime_error( "First char for a snapshot message must be S" );
+        }
+        std::stringstream ss(msg);
+
+        std::string tmp;
+
+        ss >> tmp;
+
+        while( !ss.eof() ) {
+            L2PriceLevel bid, ask;
+            double bidPx, askPx;
+            int bidSz, askSz;
+            char at1, X, at2;
+
+            ss >> bidPx >> at1 >> bidSz >> X >> askPx >> at2 >> askSz;
+            bid = L2PriceLevel{bidPx, bidSz};
+            ask = L2PriceLevel{askPx, askSz};
+            
+            bidBook[bid.price] = bid;
+            askBook[ask.price] = ask;
+        }
+        
+    }
 }; // class L2Book
 
 } // namespace sob
