@@ -53,7 +53,8 @@ public:
         return lastMode;
     }
     
-    virtual SyncMode onBookUpdate( std::shared_ptr<L3Book<BuffType>>& book, const Order& order ) override
+    // virtual SyncMode onBookUpdate( std::shared_ptr<L3Book<BuffType>>& book, const Order& order ) override
+    virtual SyncMode onBookUpdate( L3Book<BuffType>* book, const Order& order ) override
     {
         actualOrderCnt++;
         actualSnapShotCnt++;
@@ -68,7 +69,8 @@ public:
         return mode = SyncMode::SYNCHRONOUS;
     }
     
-    virtual SyncMode onTradeMsg( std::shared_ptr<L3Book<BuffType>>& book, const Trade& trade ) override
+    // virtual SyncMode onTradeMsg( std::shared_ptr<L3Book<BuffType>>& book, const Trade& trade ) override
+    virtual SyncMode onTradeMsg( L3Book<BuffType>* book, const Trade& trade ) override
     {
         receivedTradeCnt++;
         if( actualTradeCnt < receivedTradeCnt ) {
@@ -77,7 +79,8 @@ public:
         return mode = SyncMode::SYNCHRONOUS;
     }
 
-    virtual SyncMode onSnapShotMsg( std::shared_ptr<L3Book<BuffType>>& book ) override
+    // virtual SyncMode onSnapShotMsg( std::shared_ptr<L3Book<BuffType>>& book ) override
+    virtual SyncMode onSnapShotMsg( L3Book<BuffType>* book ) override
     {
         receivedSnapShotCnt++;
         if( actualSnapShotCnt < actualSnapShotCnt ) {
@@ -150,35 +153,38 @@ public:
             auto status = synchronizer.getSyncStatus();
             auto last_status = synchronizer.getLastSyncStatus();
 
-            /**
-             *  @brief  when it is now anything but ORDER_IN_LEAD and last status is ORDER_IN_LEAD,
-             *              update bookTrade and bookSnapShot with the ground truth
-             */
-            if (status == SyncMode::SYNCHRONOUS) {
-                leaderBook = bookGroundTruth;
-                if( last_status == SyncMode::ORDER_IN_LEAD ) {
-                    *bookTrade = *bookGroundTruth;
-                    *bookSnapShot = *bookGroundTruth;
+            {
+                /**
+                 *  @brief  when it is now anything but ORDER_IN_LEAD and last status is ORDER_IN_LEAD,
+                 *              update bookTrade and bookSnapShot with the ground truth
+                 */
+                if (status == SyncMode::SYNCHRONOUS) {
+                    leaderBook = bookGroundTruth;
+                    // TODO: we should make it asynchronous, i.e. in another thread such that it will not block the main logic
+                    if( last_status == SyncMode::ORDER_IN_LEAD ) {
+                        *bookTrade = *bookGroundTruth;
+                        *bookSnapShot = *bookGroundTruth;
+                    }
                 }
-            }
 
-            else if( status == SyncMode::ORDER_IN_LEAD ) {
-                leaderBook = bookGroundTruth;
-            }
-
-            else if( status == SyncMode::TRADE_IN_LEAD ) {
-                leaderBook = bookTrade;
-                if( last_status == SyncMode::ORDER_IN_LEAD ) {
-                    *bookTrade = *bookGroundTruth;
-                    *bookSnapShot = *bookGroundTruth;
+                else if( status == SyncMode::ORDER_IN_LEAD ) {
+                    leaderBook = bookGroundTruth;
                 }
-            }
 
-            else if( status == SyncMode::SNAPSHOT_IN_LEAD ) {
-                leaderBook = bookSnapShot;
-                if( last_status == SyncMode::ORDER_IN_LEAD ) {
-                    *bookTrade = *bookGroundTruth;
-                    *bookSnapShot = *bookGroundTruth;
+                else if( status == SyncMode::TRADE_IN_LEAD ) {
+                    leaderBook = bookTrade;
+                    if( last_status == SyncMode::ORDER_IN_LEAD ) {
+                        *bookTrade = *bookGroundTruth;
+                        *bookSnapShot = *bookGroundTruth;
+                    }
+                }
+
+                else if( status == SyncMode::SNAPSHOT_IN_LEAD ) {
+                    leaderBook = bookSnapShot;
+                    if( last_status == SyncMode::ORDER_IN_LEAD ) {
+                        *bookTrade = *bookGroundTruth;
+                        *bookSnapShot = *bookGroundTruth;
+                    }
                 }
             }
             

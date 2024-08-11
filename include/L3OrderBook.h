@@ -200,113 +200,128 @@ public:
     L3Book() = default;
 
     // true: aggressive, false: not aggressive
-    bool newOrder( Order& order )
-    {
-        assert( !order.isCancel() );
-        // assert( !order.isReprice() );
-
-        if( order.isSell ) {
-            if ( bidBook.empty() || order.price > getBestBid().price ) {
-                // Not aggressive/cross/market Order, quote orders only
-                askSideSize += order.size;
-                if ( askBook.find( order.price ) == askBook.end() ) {
-                    askBook[order.price] = L3PriceLevel<BuffType>{ std::vector<Order>{ order } };
-                    orderMap[ order.orderId ] = askBook[order.price].orders.begin();
-                } else {
-                    auto it = askBook[order.price].addNewOrder( order, orderMap );
-                    orderMap[order.orderId] = it;
-                }
-                return false;
-            } else {
-                // aggressive order
-                for( auto it = bidBook.begin(); it != bidBook.end(); ) {
-                    const auto best_bid_size = getBestBid().quantity;
-                    if( it->first < order.price ) {
-                        askBook[order.price] = L3PriceLevel<BuffType>{ std::vector<Order>{ order } };
-                        orderMap[order.orderId] = askBook[order.price].orders.begin();
-                        askSideSize += order.size;
-                        return true;
-                    } 
-                    
-                    if( best_bid_size <= order.size ) { // this level will be filled
-                        order.size -= best_bid_size;
-                        for( auto oit = it->second.orders.begin(); oit != it->second.orders.end(); ++oit ) {
-                            orderMap.erase( oit->orderId );
-                        }
-                        it = bidBook.erase(it);
-                        bidSideSize -= best_bid_size;
-                    } else {    // this level will not be filled
-                        bidSideSize -= ( it->second ).matchOrder( order, orderMap );
-                        return true;
-                    }
-                }
-                // this order has consumed all bidBook
-                askBook[ order.price ] = L3PriceLevel<BuffType>{ std::vector<Order>{ order } };
-                orderMap[order.orderId] = askBook[order.price].orders.begin();
-                askSideSize += order.size;
-                return true;
-            }
-        } else {
-            if ( askBook.empty() || order.price < getBestAsk().price ) {
-                // Not aggressive/cross/market Order, quote orders only
-                bidSideSize += order.size;
-                if ( bidBook.find( order.price ) == bidBook.end() ) {
-                    bidBook[order.price] = L3PriceLevel<BuffType>{ std::vector<Order>{ order } };
-                    orderMap[ order.orderId ] = bidBook[order.price].orders.begin();
-                } else {
-                    auto it = bidBook[order.price].addNewOrder( order, orderMap );
-                    orderMap[ order.orderId ] = it;
-                }
-                return false;
-            } else {
-                // aggressive order
-                for( auto it = askBook.begin(); it != askBook.end(); ) {
-                    const auto best_ask_size = getBestAsk().quantity;
-                    if( it->first > order.price ) {
-                        bidBook[order.price] = L3PriceLevel<BuffType>{ std::vector<Order>{ order } };
-                        orderMap[order.orderId] = bidBook[order.price].orders.begin();
-                        bidSideSize += order.size;
-                        return true;
-                    } 
-                    
-                    if( best_ask_size <= order.size ) { // this level will be filled
-                        order.size -= best_ask_size;
-                        for( auto oit = it->second.orders.begin(); oit != it->second.orders.end(); ++oit ) {
-                            orderMap.erase( oit->orderId );
-                        }
-                        it = askBook.erase(it);
-                        askSideSize -= best_ask_size;
-                    } else {    // this level will not be filled
-                        askSideSize -= ( it->second ).matchOrder( order, orderMap );
-                        return true;
-                    }
-                }
-                // this order has consumed all askBook
-                bidBook[ order.price ] = L3PriceLevel<BuffType>{ std::vector<Order>{ order } };
-                orderMap[order.orderId] = bidBook[order.price].orders.begin();
-                bidSideSize += order.size;
-                return true;
-            }
-        }
-    }
+    bool newOrder( Order& order );
+    // {
+    //     assert( !order.isCancel() );
+    //     // assert( !order.isReprice() );
+    //
+    //     // notify listeners before book has updated
+    //     if( ( !order.isReprice() ) && ( !order.isCancel() ) ) {
+    //         for( auto& listener: listeners ) {
+    //             listener->onBookUpdate( this, order );
+    //         }
+    //     }
+    //
+    //     if( order.isSell ) {
+    //         if ( bidBook.empty() || order.price > getBestBid().price ) {
+    //             // Not aggressive/cross/market Order, quote orders only
+    //             askSideSize += order.size;
+    //             if ( askBook.find( order.price ) == askBook.end() ) {
+    //                 askBook[order.price] = L3PriceLevel<BuffType>{ std::vector<Order>{ order } };
+    //                 orderMap[ order.orderId ] = askBook[order.price].orders.begin();
+    //             } else {
+    //                 auto it = askBook[order.price].addNewOrder( order, orderMap );
+    //                 orderMap[order.orderId] = it;
+    //             }
+    //             return false;
+    //         } else {
+    //             // aggressive order
+    //             for( auto it = bidBook.begin(); it != bidBook.end(); ) {
+    //                 const auto best_bid_size = getBestBid().quantity;
+    //                 if( it->first < order.price ) {
+    //                     askBook[order.price] = L3PriceLevel<BuffType>{ std::vector<Order>{ order } };
+    //                     orderMap[order.orderId] = askBook[order.price].orders.begin();
+    //                     askSideSize += order.size;
+    //                     return true;
+    //                 } 
+    //                 
+    //                 if( best_bid_size <= order.size ) { // this level will be filled
+    //                     order.size -= best_bid_size;
+    //                     for( auto oit = it->second.orders.begin(); oit != it->second.orders.end(); ++oit ) {
+    //                         orderMap.erase( oit->orderId );
+    //                     }
+    //                     it = bidBook.erase(it);
+    //                     bidSideSize -= best_bid_size;
+    //                 } else {    // this level will not be filled
+    //                     bidSideSize -= ( it->second ).matchOrder( order, orderMap );
+    //                     return true;
+    //                 }
+    //             }
+    //             // this order has consumed all bidBook
+    //             askBook[ order.price ] = L3PriceLevel<BuffType>{ std::vector<Order>{ order } };
+    //             orderMap[order.orderId] = askBook[order.price].orders.begin();
+    //             askSideSize += order.size;
+    //             return true;
+    //         }
+    //     } else {
+    //         if ( askBook.empty() || order.price < getBestAsk().price ) {
+    //             // Not aggressive/cross/market Order, quote orders only
+    //             bidSideSize += order.size;
+    //             if ( bidBook.find( order.price ) == bidBook.end() ) {
+    //                 bidBook[order.price] = L3PriceLevel<BuffType>{ std::vector<Order>{ order } };
+    //                 orderMap[ order.orderId ] = bidBook[order.price].orders.begin();
+    //             } else {
+    //                 auto it = bidBook[order.price].addNewOrder( order, orderMap );
+    //                 orderMap[ order.orderId ] = it;
+    //             }
+    //             return false;
+    //         } else {
+    //             // aggressive order
+    //             for( auto it = askBook.begin(); it != askBook.end(); ) {
+    //                 const auto best_ask_size = getBestAsk().quantity;
+    //                 if( it->first > order.price ) {
+    //                     bidBook[order.price] = L3PriceLevel<BuffType>{ std::vector<Order>{ order } };
+    //                     orderMap[order.orderId] = bidBook[order.price].orders.begin();
+    //                     bidSideSize += order.size;
+    //                     return true;
+    //                 } 
+    //                 
+    //                 if( best_ask_size <= order.size ) { // this level will be filled
+    //                     order.size -= best_ask_size;
+    //                     for( auto oit = it->second.orders.begin(); oit != it->second.orders.end(); ++oit ) {
+    //                         orderMap.erase( oit->orderId );
+    //                     }
+    //                     it = askBook.erase(it);
+    //                     askSideSize -= best_ask_size;
+    //                 } else {    // this level will not be filled
+    //                     askSideSize -= ( it->second ).matchOrder( order, orderMap );
+    //                     return true;
+    //                 }
+    //             }
+    //             // this order has consumed all askBook
+    //             bidBook[ order.price ] = L3PriceLevel<BuffType>{ std::vector<Order>{ order } };
+    //             orderMap[order.orderId] = bidBook[order.price].orders.begin();
+    //             bidSideSize += order.size;
+    //             return true;
+    //         }
+    //     }
+    // }
 
     // true: reprice success, false: reprice fail
-    bool modifyOrder( const Order& order )
-    {
-        if ( (!order.isReprice()) || ( orderMap.find( *order.oldId ) == orderMap.end() ) ) {
-            return false;
-        }
-        auto oldOrder = *(orderMap[ *order.oldId ]);
-        const auto canceled = cancelId( oldOrder.orderId );
-
-        if( !canceled ) {
-            return false;   // old order not found, refuse to reprice, maybe it has been traded
-        } else {
-            Order new_order = order;
-            newOrder( new_order );
-            return true;
-        }
-    }
+    bool modifyOrder( const Order& order );
+    // {
+    //     if ( (!order.isReprice()) || ( orderMap.find( *order.oldId ) == orderMap.end() ) ) {
+    //         return false;
+    //     }
+    //
+    //     // notify listeners before book has updated
+    //     if( ( order.isReprice() ) ) {
+    //         for( auto& listener: listeners ) {
+    //             listener->onBookUpdate( this, order );
+    //         }
+    //     }
+    //
+    //     auto oldOrder = *(orderMap[ *order.oldId ]);
+    //     const auto canceled = cancelId( oldOrder.orderId );
+    //
+    //     if( !canceled ) {
+    //         return false;   // old order not found, refuse to reprice, maybe it has been traded
+    //     } else {
+    //         Order new_order = order;
+    //         newOrder( new_order );
+    //         return true;
+    //     }
+    // }
 
     // TODO: change the L3Level.orders.erase(it) to something better, i.e. mark an order is canceled
     bool cancelId( const int id )
@@ -333,13 +348,20 @@ public:
     }
 
     // true: cancelled, false: cancel fail
-    bool cancelOrder( const Order& order )
-    {
-        if (!order.isCancel()) {
-            return false;
-        }
-        return cancelId(*order.oldId );
-    }
+    bool cancelOrder( const Order& order );
+    // {
+    //     if (!order.isCancel()) {
+    //         return false;
+    //     }
+    //
+    //     // notify listeners before book has updated
+    //     if( ( order.isCancel() ) ) {
+    //         for( auto& listener: listeners ) {
+    //             listener->onBookUpdate( this, order );
+    //         }
+    //     }
+    //     return cancelId(*order.oldId );
+    // }
 
 
     /**
@@ -400,10 +422,15 @@ public:
                          *          The guessed ask side size is: 2 * ( recored_trds_vol[trd_px] + trade.getTotalVol() )
                          *          For simplicity, we just guess that there is one order there
                          * *******************************************/
-                        newOrder( Order( fmt::format("N {} 1 {} {}", 
+                        Order tmp_order( fmt::format("N {} 1 {} {}", 
                                                      IdGenNeg::getInstance().genId(),
                                                      2 * recored_trds_vol[trd_px],
-                                                     last_unconsumed_lvl ) ) );
+                                                     last_unconsumed_lvl ) ) ;
+                        newOrder( tmp_order );
+                        // newOrder( Order( fmt::format("N {} 1 {} {}", 
+                        //                              IdGenNeg::getInstance().genId(),
+                        //                              2 * recored_trds_vol[trd_px],
+                        //                              last_unconsumed_lvl ) ) );
                         recored_trds_vol.erase( last_unconsumed_lvl );
                         last_unconsumed_lvl = trd_px;
                     }
@@ -416,16 +443,26 @@ public:
                     const auto trd_qty = trade.getTotalVol();
                     if ( trd_qty < getBestBid().quantity ) {
                         // simply reflect the trade information on the book
-                        newOrder( Order( fmt::format("N {} 1 {} {}", 
+                        Order tmp_order( fmt::format("N {} 1 {} {}", 
                                                      IdGenNeg::getInstance().genId(),
                                                      trd_qty,
-                                                     best_bid_px ) ) );
+                                                     best_bid_px ) );
+                        newOrder( tmp_order );
+                        // newOrder( Order( fmt::format("N {} 1 {} {}", 
+                        //                              IdGenNeg::getInstance().genId(),
+                        //                              trd_qty,
+                        //                              best_bid_px ) ) );
                     } else {
                         // trade quantity + not yet received aggresive orders
-                        newOrder( Order( fmt::format("N {} 1 {} {}", 
+                        Order tmp_order( fmt::format("N {} 1 {} {}", 
                                                      IdGenNeg::getInstance().genId(),
                                                      3 * trd_qty,
-                                                     best_bid_px ) ) );
+                                                     best_bid_px ) ) ;
+                        newOrder( tmp_order );
+                        // newOrder( Order( fmt::format("N {} 1 {} {}", 
+                        //                              IdGenNeg::getInstance().genId(),
+                        //                              3 * trd_qty,
+                        //                              best_bid_px ) ) );
                     }
                     
                 } else {
@@ -437,15 +474,25 @@ public:
                  * This is a trade-through order, apply the order first and then add an ask order of 2 * total traded volume on the best bid level
                  * *******************************************/
                 const auto total_trd_vol = trade.getTotalVol();
-                newOrder( fmt::format("N {} 1 {} {}", 
+                Order tmp_order( fmt::format("N {} 1 {} {}", 
                                       IdGenNeg::getInstance().genId(),
                                       total_trd_vol, 
                                       trade.price[0] ) );
+                newOrder( tmp_order );
+                // newOrder( fmt::format("N {} 1 {} {}", 
+                //                       IdGenNeg::getInstance().genId(),
+                //                       total_trd_vol, 
+                //                       trade.price[0] ) );
 
-                newOrder( fmt::format("N {} 1 {} {}", 
+                Order tmp_order_( fmt::format("N {} 1 {} {}", 
                                       IdGenNeg::getInstance().genId(),
                                       2 * total_trd_vol, 
                                       best_bid_px ) );
+                newOrder( tmp_order_ );
+                // newOrder( fmt::format("N {} 1 {} {}", 
+                //                       IdGenNeg::getInstance().genId(),
+                //                       2 * total_trd_vol, 
+                //                       best_bid_px ) );
             }
         } else {
             // Seller is the liquidity taker
@@ -462,10 +509,15 @@ public:
                     if ( trd_px == last_unconsumed_lvl ) {
                         recored_trds_vol[trd_px] += trade.getTotalVol();
                     } else {
-                        newOrder( Order( fmt::format("N {} 0 {} {}", 
+                        Order tmp_order( fmt::format("N {} 0 {} {}", 
                                                      IdGenNeg::getInstance().genId(),
                                                      2 * recored_trds_vol[trd_px],
-                                                     last_unconsumed_lvl ) ) );
+                                                     last_unconsumed_lvl ) );
+                        newOrder( tmp_order );
+                        // newOrder( Order( fmt::format("N {} 0 {} {}", 
+                        //                              IdGenNeg::getInstance().genId(),
+                        //                              2 * recored_trds_vol[trd_px],
+                        //                              last_unconsumed_lvl ) ) );
                         recored_trds_vol.erase( last_unconsumed_lvl );
                         last_unconsumed_lvl = trd_px;
                     }
@@ -473,16 +525,26 @@ public:
                     const auto trd_qty = trade.getTotalVol();
                     if ( trd_qty < getBestBid().quantity ) {
                         // simply reflect the trade information on the book
-                        newOrder( Order( fmt::format("N {} 0 {} {}", 
+                        Order tmp_order( fmt::format("N {} 0 {} {}", 
                                                      IdGenNeg::getInstance().genId(),
                                                      trd_qty,
-                                                     best_ask_px ) ) );
+                                                     best_ask_px ) );
+                        newOrder( tmp_order );
+                        // newOrder( Order( fmt::format("N {} 0 {} {}", 
+                        //                              IdGenNeg::getInstance().genId(),
+                        //                              trd_qty,
+                        //                              best_ask_px ) ) );
                     } else {
                         // trade quantity + not yet received aggresive orders
-                        newOrder( Order( fmt::format("N {} 0 {} {}", 
+                        Order tmp_order( fmt::format("N {} 0 {} {}", 
                                                      IdGenNeg::getInstance().genId(),
                                                      3 * trd_qty,
-                                                     best_ask_px ) ) );
+                                                     best_ask_px ) );
+                        newOrder( tmp_order );
+                        // newOrder( Order( fmt::format("N {} 0 {} {}", 
+                        //                              IdGenNeg::getInstance().genId(),
+                        //                              3 * trd_qty,
+                        //                              best_ask_px ) ) );
                     }
                     
                 } else {
@@ -493,15 +555,25 @@ public:
                  * This is a trade-through order, apply the order first and then add an ask order of 2 * total traded volume on the best bid level
                  * *******************************************/
                 const auto total_trd_vol = trade.getTotalVol();
-                newOrder( fmt::format("N {} 0 {} {}", 
+                Order tmp_order( fmt::format("N {} 0 {} {}", 
                                       IdGenNeg::getInstance().genId(),
                                       total_trd_vol, 
                                       trade.price[trade.getLvlCnt()-1] ) );
+                newOrder( tmp_order );
+                // newOrder( fmt::format("N {} 0 {} {}", 
+                //                       IdGenNeg::getInstance().genId(),
+                //                       total_trd_vol, 
+                //                       trade.price[trade.getLvlCnt()-1] ) );
 
-                newOrder( fmt::format("N {} 0 {} {}", 
+                Order tmp_order_(fmt::format("N {} 0 {} {}", 
                                       IdGenNeg::getInstance().genId(),
                                       2 * total_trd_vol, 
                                       best_ask_px ) );
+                newOrder( tmp_order );
+                // newOrder( fmt::format("N {} 0 {} {}", 
+                //                       IdGenNeg::getInstance().genId(),
+                //                       2 * total_trd_vol, 
+                //                       best_ask_px ) );
             }
         }
     }
@@ -519,12 +591,12 @@ public:
 
     auto getBestMarketL3() const
     {
-        L3PxLvlPair ret;
+        L3PxLvlPair<BuffType> ret;
         if ( !askBook.empty() ) {
-            ret.ask = askBook.begin()->second;
+            ret.ask = std::optional<L3PriceLevel<BuffType>>{askBook.begin()->second};
         }
         if ( !bidBook.empty() ) {
-            ret.bid = bidBook.begin()->second;
+            ret.bid = std::optional<L3PriceLevel<BuffType>>{bidBook.begin()->second};
         }
         return ret;
     }
