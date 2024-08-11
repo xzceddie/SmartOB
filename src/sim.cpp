@@ -103,15 +103,6 @@ int main( int argc, char** argv )
         throw std::runtime_error("sim_file not specified");
     }
 
-    std::string dBufferType;
-    if (vm.count("dBufferType")) {
-        spdlog::info("[::main] dBufferType: {}", vm["dBufferType"].as<std::string>());
-        dBufferType = vm["dBufferType"].as<std::string>();
-    } else {
-        spdlog::warn("[::main] dBufferType not specified, default to circular_buffer" );
-        dBufferType = "circular_buffer";
-    }
-
     if ( vm.count("test") ) {
         auto l3_res_book = sob::runSimL3<boost::circular_buffer>( sim_file );
         auto l2_res_book = sob::runSim( sim_file );
@@ -129,6 +120,15 @@ int main( int argc, char** argv )
             auto res_book = sob::runSim( sim_file );
             spdlog::info( "[::main] Got result book: \n{}", res_book.toString() );
         } else {
+            std::string dBufferType;
+            if (vm.count("dBufferType")) {
+                spdlog::info("[::main] dBufferType: {}", vm["dBufferType"].as<std::string>());
+                dBufferType = vm["dBufferType"].as<std::string>();
+            } else {
+                spdlog::warn("[::main] dBufferType not specified, default to circular_buffer" );
+                dBufferType = "circular_buffer";
+            }
+
             spdlog::info("[::main] using L3OrderBook" );
             if (dBufferType == "list") {
                 auto res_book = sob::runSimL3<std::list>( sim_file );
