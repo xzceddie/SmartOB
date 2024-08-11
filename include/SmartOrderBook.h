@@ -3,6 +3,7 @@
 
 
 #include <L3OrderBook.h>
+#include <L3OrderBookListener.h>
 
 
 
@@ -13,8 +14,31 @@ template<typename LevelType, typename Comparator>
 using OneSideBook = std::map<double, LevelType, Comparator>;
 
 
+template <template <typename T, typename AllocT=std::allocator<T> > class BuffType = boost::circular_buffer>
 class Synchronizer
+    : public L3OrderBookListener<BuffType>
 {
+private:
+    int actualOrderCnt{};
+    int actualTradeCnt{};
+    int receivedTradeCnt{};
+    int receivedSnapShotCnt{};
+
+public:
+    Synchronizer() = default;
+
+    Synchronizer( std::shared_ptr<L3Book<BuffType>> book )
+    : L3OrderBookListener<BuffType>( book )
+    {
+    }
+    
+    virtual void onBookUpdate( std::shared_ptr<L3Book<BuffType>>& book, const Order& order ) override
+    {
+        actualOrderCnt++;
+        if (book -> isAggressive( order )) {
+            actualTradeCnt++;
+        }
+    }
 }; // class Synchronizer
 
 
@@ -31,7 +55,7 @@ private:
     L3Book<BuffType> bookTrade;
     L3Book<BuffType> bookSnapShot;
 
-    Synchronizer synchronizer;
+    Synchronizer<BuffType> synchronizer;
 }; // class SmartOrderBook
 
 

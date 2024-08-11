@@ -15,6 +15,10 @@
 
 namespace sob {
 
+
+template <template <typename T, typename AllocT=std::allocator<T> > class BuffType = boost::circular_buffer>
+class L3OrderBookListener;
+
 template<typename LevelType, typename Comparator>
 using OneSideBook = std::map<double, LevelType, Comparator>;
 
@@ -34,6 +38,8 @@ private:
 
     size_t bidSideSize = 0;
     size_t askSideSize = 0;
+
+    std::vector<std::shared_ptr<L3OrderBookListener<BuffType>>> listeners;
 
 public:
 
@@ -124,6 +130,12 @@ public:
             return L2PriceLevel{};
         }
         return askBook.begin()->second.toL2PriceLevel();
+    }
+
+
+    void accept( L3OrderBookListener<BuffType>* listener )
+    {
+        listeners.push_back( std::shared_ptr<L3OrderBookListener<BuffType>>( listener ) );
     }
 
     bool isAggressive( const Order& order ) const
