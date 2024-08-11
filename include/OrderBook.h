@@ -52,6 +52,15 @@ private:
     size_t askSideSize = 0;
 
 public:
+    bool operator==( const L2Book& rhs )
+    {
+        return bidBook == rhs.bidBook 
+            && askBook == rhs.askBook
+            && bidSideSize == rhs.bidSideSize
+            && askSideSize == rhs.askSideSize
+        ;
+    }
+
     size_t getBidSideSize() const
     {
         return bidSideSize;
@@ -136,8 +145,15 @@ public:
     // TODO: implement match logics
     bool newOrder( Order& order )
     {
-        assert( !order.isCancel() );
-        assert( !order.isReprice() );
+        // assert( !order.isCancel() );
+        // assert( !order.isReprice() );
+        if( order.isCancel() ) {
+            throw std::runtime_error( "[OrderBook::newOrder]: cannot handle cancel order" );
+        }
+        if( order.isReprice() ) {
+            throw std::runtime_error( "[OrderBook::newOrder]: cannot handle reprice order" );
+        }
+
         if( order.isSell ) {
             if ( bidBook.empty() || order.price > getBestBid().price ) {
                 // Not aggressive/cross/market Order, quote orders only
@@ -237,6 +253,20 @@ public:
         }
     }
 
+    L2Book( OneSideBook<L2PriceLevel, BidComparator>& bids, OneSideBook<L2PriceLevel, AskComparator>& asks )
+    : bidBook{ bids }
+    , askBook{ asks }
+    {}
+
+    L2Book( OneSideBook<L2PriceLevel, BidComparator>& bids,
+            OneSideBook<L2PriceLevel, AskComparator>& asks,
+            const size_t bidSideSize,
+            const size_t askSideSize )
+    : bidBook{ bids }
+    , askBook{ asks }
+    , bidSideSize{ bidSideSize }
+    , askSideSize{ askSideSize }
+    {}
 }; // class L2Book
 
 } // namespace sob

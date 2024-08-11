@@ -12,24 +12,24 @@ namespace sob {
 
 
 template <template <typename T, typename AllocT=std::allocator<T> > class BuffType = boost::circular_buffer>
-L3Book<BuffType> runSim( std::vector<Order>& orders )
+L3Book<BuffType> runSimL3( std::vector<Order>& orders )
 {
     L3Book<BuffType> res{ orders };
     return res;
 }
 
 template <template <typename T, typename AllocT=std::allocator<T> > class BuffType = boost::circular_buffer>
-L3Book<BuffType> runSim( std::vector<std::string>& order_strs )
+L3Book<BuffType> runSimL3( std::vector<std::string>& order_strs )
 {
     std::vector<Order> orders;
     for( const auto& str : order_strs ) {
         orders.push_back( Order{ str } );
     }
-    return runSim<BuffType>( orders );
+    return runSimL3<BuffType>( orders );
 }
 
 template <template <typename T, typename AllocT=std::allocator<T> > class BuffType = boost::circular_buffer>
-L3Book<BuffType> runSim( const std::string& file_name )
+L3Book<BuffType> runSimL3( const std::string& file_name )
 {
     std::vector<std::string> order_strs;
     std::ifstream ifs{ file_name };
@@ -37,7 +37,7 @@ L3Book<BuffType> runSim( const std::string& file_name )
     while( std::getline( ifs, line ) ) {
         order_strs.push_back( line );
     }
-    return runSim<BuffType>( order_strs );
+    return runSimL3<BuffType>( order_strs );
 }
 
 L2Book runSim( std::vector<Order>& orders )
@@ -74,7 +74,8 @@ int main( int argc, char** argv )
     po::options_description desc("Allowed options");
     desc.add_options()
         ("help", "produce help message")
-        ("L2", "use L2OrderBook, if unspecified, will use L3OrderBook")
+        ("L2", "use L2Book, if unspecified, will use L3Book")
+        ("test", "will run both L2Book and L3Book and test if the aggregated L3Book result is the same as the L2Book")
         ("sim_file", po::value<std::string>(), "the simulation file you would like to input")
         ("dBufferType", po::value<std::string>(), "what type of dBuffer you would like to use, which is the buffer type used in the L3PriceLevel, choose from: [ list, circular_buffer ], default to circular_buffer")
     ;
@@ -105,24 +106,33 @@ int main( int argc, char** argv )
         dBufferType = "circular_buffer";
     }
 
-    if (vm.count("L2")) {
-        spdlog::info("[::main] using L2OrderBook" );
-        auto res_book = sob::runSim( sim_file );
-        spdlog::info( "[::main] Got result book: \n{}", res_book.toString() );
+    if ( vm.count("test") ) {
+        auto l3_res_book = sob::runSimL3<boost::circular_buffer>( sim_file );
+        auto l2_res_book = sob::runSim( sim_file );
+        if ( l3_res_book.agg() == l2_res_book ) {
+            spdlog::info( "[::main] -- test passed --" );
+        } else {
+            spdlog::error( "[::main] -- test failed --" );
+            spdlog::info( "[::main] L3 res book: \n{}", l3_res_book.toString() );
+            spdlog::info( "[::main] aggregated L2 res book: \n{}", l3_res_book.agg().toString() );
+            spdlog::info( "[::main] L2 res book: \n{}", l2_res_book.toString() );
+        }
     } else {
-        spdlog::info("[::main] using L3OrderBook" );
-        if (dBufferType == "list") {
-            auto res_book = sob::runSim<std::list>( sim_file );
+        if (vm.count("L2")) {
+            spdlog::info("[::main] using L2OrderBook" );
+            auto res_book = sob::runSim( sim_file );
             spdlog::info( "[::main] Got result book: \n{}", res_book.toString() );
-        } else if (dBufferType == "circular_buffer") {  
-            auto res_book = sob::runSim<boost::circular_buffer>( sim_file );
-            spdlog::info( "[::main] Got result book: \n{}", res_book.toString() );
+        } else {
+            spdlog::info("[::main] using L3OrderBook" );
+            if (dBufferType == "list") {
+                auto res_book = sob::runSimL3<std::list>( sim_file );
+                spdlog::info( "[::main] Got result book: \n{}", res_book.toString() );
+            } else if (dBufferType == "circular_buffer") {  
+                auto res_book = sob::runSimL3<boost::circular_buffer>( sim_file );
+                spdlog::info( "[::main] Got result book: \n{}", res_book.toString() );
+            }
         }
     }
 
     return 0;
 }
-
-
-
-

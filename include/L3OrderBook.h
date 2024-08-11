@@ -355,6 +355,24 @@ public:
 
         return ss.str();
     }
+
+    /**
+     *  @brief  aggregate all orders in L3Book to producd an L2Book
+     */
+    L2Book agg() const
+    {
+        OneSideBook<L2PriceLevel, BidComparator> bidL2Book;
+        OneSideBook<L2PriceLevel, AskComparator> askL2Book;
+
+        for(const auto& [px, level]: bidBook) {
+            bidL2Book[px] = level.toL2PriceLevel();
+        }
+        for(const auto& [px, level]: askBook) {
+            askL2Book[px] = level.toL2PriceLevel();
+        }
+
+        return { bidL2Book, askL2Book, bidSideSize, askSideSize };
+    }
 }; // class L3Book
 
 
