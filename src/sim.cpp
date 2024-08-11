@@ -79,8 +79,11 @@ int main( int argc, char** argv )
         ("sim_file", po::value<std::string>(), "the simulation file you would like to input")
         ("dBufferType", po::value<std::string>(),
                  "what type of dBuffer you would like to use, "
-                 "which is the buffer type used in the L3PriceLevel, \n"
-                 "choose from: [ list, circular_buffer ], default to circular_buffer")
+                 "which is the buffer type used in the L3PriceLevel, "
+                 "\nchoose from: [ list, circular_buffer ], "
+                 "\ndefault to: circular_buffer"
+                 "\n**More of a perf consideration, result is unaffected**"
+         )
     ;
 
     po::variables_map vm;
