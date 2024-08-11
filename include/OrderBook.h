@@ -37,6 +37,9 @@ template<typename LevelType, typename Comparator>
 using OneSideBook = std::map<double, LevelType, Comparator>;
 
 /**
+ *  @brief  An Orderbook that keeps the aggregated information on all levels
+ *  @NOTE   L2Book does not support cancelation or repricing / modifying, because it does not do the book-keeping of the order information
+ *              Thus it does not know the status of the to-be-canceled or to-be-modified order
  *  @NOTE   This is not a Template class;
  */
 class L2Book
@@ -214,19 +217,15 @@ public:
 
     }
 
-    // TODO: Implement modifyOrder
-    // true: reprice success, false: reprice fail
-    virtual bool modifyOrder( const Order& order )
-    {
-        return false;
-    }
+    // bool modifyOrder( const Order& order )
+    // {
+    //     return false;
+    // }
 
-    // TODO: Implement cancelOrder
-    // true: cancelled, false: cancel fail
-    virtual bool cancelOrder( const Order& order )
-    {
-        return false;
-    }
+    // bool cancelOrder( const Order& order )
+    // {
+    //     return false;
+    // }
 
     L2Book() = default;
 
