@@ -18,83 +18,6 @@
 namespace sob {
 
 
-struct L2PriceLevel
-{
-    double price;
-    int quantity;
-
-    friend std::ostream& operator<<(std::ostream& os, const L2PriceLevel& l)
-    {
-        os << "L2PriceLevel{price=" << l.price
-           << ", quantity=" << l.quantity
-           << "}";
-        return os;
-    }
-
-    std::string toString() const
-    {
-        std::stringstream ss;
-        ss << *this;
-        return ss.str();
-    }
-
-    L2PriceLevel() = default;
-
-    L2PriceLevel( const double px, const int qty )
-    : price{px}, quantity{qty}
-    {}
-
-    // fmt: px, qty
-    L2PriceLevel( const std::string& str )
-    {
-        std::stringstream ss(str);
-        try {
-            ss >> price >> quantity;
-        } catch ( const std::exception& e ) {
-            spdlog::error("Got error when reading L2PriceLevel from string: {}, the exception: {}"
-                          , str, e.what());
-            throw;
-        }
-    }
-
-    bool operator==( const L2PriceLevel& rhs ) const
-    {
-        return ( price == rhs.price && quantity == rhs.quantity );
-    }
-}; // struct L2PriceLevel
-
-
-struct L2PxLvlPair
-{
-    std::optional<L2PriceLevel> bid;
-    std::optional<L2PriceLevel> ask;
-
-    friend std::ostream& operator<<(std::ostream& os, const L2PxLvlPair& p)
-    {
-        
-        if (p.bid) {
-            os << p.bid.value().quantity << '@' << p.bid.value().price;
-        } else {
-            os << "<empty>";
-        }
-        os << " X ";
-
-        if (p.ask) {
-            os << p.ask.value().price << '@' << p.ask.value().quantity;
-        } else {
-            os << "<empty>";
-        }
-        return os;
-    }
-
-    std::string toString() const
-    {
-        std::stringstream ss;
-        ss << *this;
-        return ss.str();
-    }
-}; // sturct L2PxLvlPair
-
 
 struct OrderInfo
 {
@@ -221,6 +144,89 @@ struct Order
     }
 
 }; // struct Order
+
+struct L2PriceLevel
+{
+    double price;
+    int quantity;
+
+    friend std::ostream& operator<<(std::ostream& os, const L2PriceLevel& l)
+    {
+        os << "L2PriceLevel{price=" << l.price
+           << ", quantity=" << l.quantity
+           << "}";
+        return os;
+    }
+
+    std::string toString() const
+    {
+        std::stringstream ss;
+        ss << *this;
+        return ss.str();
+    }
+
+    L2PriceLevel() = default;
+
+    L2PriceLevel( const double px, const int qty )
+    : price{px}, quantity{qty}
+    {}
+
+    // fmt: px, qty
+    L2PriceLevel( const std::string& str )
+    {
+        std::stringstream ss(str);
+        try {
+            ss >> price >> quantity;
+        } catch ( const std::exception& e ) {
+            spdlog::error("Got error when reading L2PriceLevel from string: {}, the exception: {}"
+                          , str, e.what());
+            throw;
+        }
+    }
+
+    int matchOrder( const Order& order )
+    {
+        quantity -= order.size;
+        return order.size;
+    }
+
+    bool operator==( const L2PriceLevel& rhs ) const
+    {
+        return ( price == rhs.price && quantity == rhs.quantity );
+    }
+}; // struct L2PriceLevel
+
+
+struct L2PxLvlPair
+{
+    std::optional<L2PriceLevel> bid;
+    std::optional<L2PriceLevel> ask;
+
+    friend std::ostream& operator<<(std::ostream& os, const L2PxLvlPair& p)
+    {
+        
+        if (p.bid) {
+            os << p.bid.value().quantity << '@' << p.bid.value().price;
+        } else {
+            os << "<empty>";
+        }
+        os << " X ";
+
+        if (p.ask) {
+            os << p.ask.value().price << '@' << p.ask.value().quantity;
+        } else {
+            os << "<empty>";
+        }
+        return os;
+    }
+
+    std::string toString() const
+    {
+        std::stringstream ss;
+        ss << *this;
+        return ss.str();
+    }
+}; // sturct L2PxLvlPair
 
 
 template <template <typename T, typename AllocT=std::allocator<T> > class BuffType = boost::circular_buffer>

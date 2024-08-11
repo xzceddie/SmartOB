@@ -18,7 +18,9 @@ TEST_CASE("test_L2OrderBook", "1")
     sob::Order o5("N 4 0 100 1.3");
     sob::Order o6("N 5 0 100 1.2");
 
-    sob::L2Book ob{ std::vector<sob::Order>{o1, o2, o3, o4, o5, o6} };
+    std::vector<sob::Order> tmp{ o1, o2, o3, o4, o5, o6 };
+
+    sob::L2Book ob{ tmp };
 
     spdlog::debug("[test_L2OrderBook, 1] Constructed OrderBook: ");
     std::cout << ob.toString() << std::endl;

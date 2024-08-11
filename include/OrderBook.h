@@ -37,7 +37,7 @@ template<typename LevelType, typename Comparator>
 using OneSideBook = std::map<double, LevelType, Comparator>;
 
 /**
- *  @brief  This is not a Template class;
+ *  @NOTE   This is not a Template class;
  */
 class L2Book
 {
@@ -100,12 +100,16 @@ public:
     {
         std::stringstream ss;
 
+        if ( askBook.empty() )
+            ss << "<Empty>\n";
         for( auto rit = askBook.rbegin(); rit != askBook.rend(); ++rit ) {
             ss << rit->second.toString() << '\n';
         }
 
-        ss << "------\n";
+        ss << "--^ ASK SIDE--------BID SIDE V---\n";
 
+        if ( bidBook.empty() )
+            ss << "<Empty>\n";
         for( auto it = bidBook.begin(); it != bidBook.end(); ++it ) {
             ss << it->second.toString() << '\n';
         }
@@ -127,13 +131,13 @@ public:
 
     // @return  true if took liquidity, false if added liquidity
     // TODO: implement match logics
-    virtual bool newOrder( const Order& order )
+    bool newOrder( Order& order )
     {
         assert( !order.isCancel() );
         assert( !order.isReprice() );
         if( order.isSell ) {
-            // Not aggressive/cross/market Order, quote orders only
             if ( bidBook.empty() || order.price > getBestBid().price ) {
+                // Not aggressive/cross/market Order, quote orders only
                 askSideSize += order.size;
                 if ( askBook.find( order.price ) == askBook.end() ) {
                     askBook[order.price] = L2PriceLevel{order.price, order.size};
@@ -141,6 +145,26 @@ public:
                     askBook[order.price].quantity += order.size;
                 }
                 return false;
+            } else {
+                // aggressive order
+                for( auto it = bidBook.begin(); it != bidBook.end(); ) {
+                    const auto best_bid_size = getBestBid().quantity;
+                    if (it -> first < order.price ) {
+                        askBook[order.price] = L2PriceLevel{order.price, order.size};
+                        askSideSize += order.size;
+                        return true;
+                    }
+
+                    if( best_bid_size <= order.size ) {
+                        order.size -= best_bid_size;
+                        it = bidBook.erase( it );
+                        bidSideSize -= best_bid_size;
+                    } else {
+                        bidSideSize -= (it -> second).matchOrder( order );
+                        return true;
+                    }
+
+                }
             }
             return true;
         } else {
@@ -153,6 +177,25 @@ public:
                     bidBook[order.price].quantity += order.size;
                 }
                 return false;
+            } else {
+                // aggressive order
+                for( auto it = askBook.begin(); it != askBook.end(); ) {
+                    const auto best_ask_size = getBestAsk().quantity;
+                    if (it -> first > order.price ) {
+                        bidBook[order.price] = L2PriceLevel{order.price, order.size};
+                        bidSideSize += order.size;
+                        return true;
+                    }
+
+                    if( best_ask_size <= order.size ) {
+                        order.size -= best_ask_size;
+                        it = askBook.erase( it );
+                        askSideSize -= best_ask_size;
+                    } else {
+                        askSideSize -= (it -> second).matchOrder( order );
+                        return true;
+                    }
+                }
             }
             return true;
         }
@@ -175,9 +218,9 @@ public:
 
     L2Book() = default;
 
-    L2Book( const std::vector<Order>& orders )
+    L2Book( std::vector<Order>& orders )
     {
-        for(const auto& order: orders)
+        for(auto& order: orders)
         {
             newOrder( order );
         }
