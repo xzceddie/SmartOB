@@ -314,6 +314,33 @@ struct L3PriceLevel
         return res;
     }
 
+    // size_t matchOrder( Order& order )
+    // {
+    //     size_t res{};
+    //     while (true) {
+    //         auto& front_order = orders.front();
+    //         if( order.size > front_order.size ) {
+    //             const auto popped_id = orders.front().orderId;
+    //             order.size -= front_order.size;
+    //             res += front_order.size;
+    //             orders.pop_front();
+    //
+    //             numOrders -= 1;
+    //             quantity -= front_order.size;
+    //         } else {
+    //             orders.front().size -= order.size;
+    //             res += order.size;
+    //             quantity -= order.size;
+    //             if( orders.front().size == 0 ) {
+    //                 numOrders -= 1;
+    //                 orders.pop_front();
+    //             }
+    //             break;
+    //         }
+    //     }
+    //     return res;
+    // }
+
     L3PriceLevel() = default;
     
     L3PriceLevel( const std::vector<Order>& orders_ )

@@ -185,6 +185,23 @@ public:
     }
 
 
+    void rmLvl( const double px )
+    {
+        if ( bidBook.find( px ) != bidBook.end() ) {
+            for(auto& order: bidBook[px].orders) {
+                orderMap.erase( order.orderId );
+            }
+            bidBook.erase( px );
+        }
+        if ( askBook.find( px ) != askBook.end() ) {
+            for(auto& order: askBook[px].orders) {
+                orderMap.erase( order.orderId );
+            }
+            askBook.erase( px );
+        }
+    }
+
+
 
     // std::optional<std::list<Order>::iterator> queryOrderId( const int orderId ) const
     std::optional<typename BuffType<Order>::iterator> queryOrderId( const int orderId ) const
@@ -386,11 +403,107 @@ public:
         }
     }
 
-    // TODO: implement this one
     void applySnapShot( L2Book& snapshot )
     {
         for ( auto& listener: listeners ) {
             listener->onSnapShotMsg( this, snapshot );
+        }
+
+        // bidBook.clear();
+        // askBook.clear();
+        // bidSideSize = 0;
+        // askSideSize = 0;
+        // orderMap.clear();
+        //
+        // for( auto&[ px, lvl ]: snapshot.getBidSide() ) {
+        //     Order new_order{ fmt::format( "N {} 0 {} {}", IdGenNeg::getInstance().genId(), lvl.quantity, px )};
+        //     pureNewOrder( new_order );
+        // }
+        // for( auto&[ px, lvl ]: snapshot.getAskSide() ) {
+        //     Order new_order{ fmt::format( "N {} 1 {} {}", IdGenNeg::getInstance().genId(), lvl.quantity, px )};
+        //     pureNewOrder( new_order );
+        // }
+
+        // std::vector<Order> toApply;
+
+        for( auto&[ px, L3lvl ]: bidBook ) {
+            if ( snapshot.getBidSide().find( px ) == snapshot.getBidSide().end() ) {
+                // remove the level in old L3 book that's no longer there
+                Order new_order( fmt::format( "N {} 1 {} {}", 
+                                 IdGenNeg::getInstance().genId(),
+                                 L3lvl.quantity,
+                                 px)
+                                );
+                pureNewOrder( new_order );
+                // toApply.emplace_back( new_order );
+                // rmLvl( px );
+            }
+            break;
+        }
+
+        for( auto&[ px, L3lvl ]: askBook ) {
+            if ( snapshot.getAskSide().find( px ) == snapshot.getAskSide().end() ) {
+                Order new_order( fmt::format( "N {} 0 {} {}", 
+                                 IdGenNeg::getInstance().genId(),
+                                 L3lvl.quantity,
+                                 px) );
+                pureNewOrder( new_order );
+                // toApply.emplace_back( new_order );
+                // rmLvl( px );
+            }
+            break;
+        }
+
+        for ( auto& [px, lvl]: snapshot.getBidSide() ) {
+            if ( bidBook.find( px ) == bidBook.end() ) {
+                Order new_order( fmt::format( "N {} 0 {} {}", 
+                                 IdGenNeg::getInstance().genId(),
+                                 lvl.quantity,
+                                 px
+                                ));
+                // toApply.emplace_back( new_order );
+                pureNewOrder( new_order );
+            } else {
+                if ( lvl.quantity > bidBook[px].quantity ) {
+                    Order new_order( fmt::format( "N {} 0 {} {}", 
+                                     IdGenNeg::getInstance().genId(),
+                                     lvl.quantity - bidBook[px].quantity,
+                                     px));
+                    // bidBook[px].matchOrder( new_order, orderMap );
+                    bidBook[px].orders.push_back( new_order );
+                } else {
+                    Order new_order( fmt::format( "N {} 1 {} {}", 
+                                     IdGenNeg::getInstance().genId(),
+                                     lvl.quantity - bidBook[px].quantity,
+                                     px));
+                    bidBook[px].matchOrder( new_order, orderMap );
+                }
+            }
+        }
+
+        for ( auto& [px, lvl]: snapshot.getAskSide() ) {
+            if ( askBook.find( px ) == askBook.end() ) {
+                Order new_order( fmt::format( "N {} 1 {} {}", 
+                                 IdGenNeg::getInstance().genId(),
+                                 lvl.quantity,
+                                 px));
+                pureNewOrder( new_order );
+            } else {
+                if ( lvl.quantity > askBook[px].quantity ) {
+                    Order new_order( fmt::format( "N {} 1 {} {}", 
+                                     IdGenNeg::getInstance().genId(),
+                                     lvl.quantity - askBook[px].quantity,
+                                     px));
+                    // askBook[px].matchOrder( new_order, orderMap );
+                    askBook[px].orders.push_back( new_order );
+                } else {
+                    Order new_order( fmt::format( "N {} 0 {} {}", 
+                                     IdGenNeg::getInstance().genId(),
+                                     lvl.quantity - askBook[px].quantity,
+                                     px));
+                    askBook[px].matchOrder( new_order, orderMap );
+                }
+            }
         }
     }
 

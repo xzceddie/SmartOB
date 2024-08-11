@@ -96,7 +96,7 @@ public:
     {
         spdlog::debug( "onSnapShotMsg" );
         receivedSnapShotCnt++;
-        if( actualSnapShotCnt < actualSnapShotCnt ) {
+        if( actualSnapShotCnt < receivedSnapShotCnt ) {
             // return mode = SyncMode::SNAPSHOT_IN_LEAD;
             lastMode = mode;
             mode = SyncMode::SNAPSHOT_IN_LEAD;

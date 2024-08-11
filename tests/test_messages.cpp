@@ -44,6 +44,18 @@ TEST_CASE("test_messages_snapshot", "1")
     spdlog::set_level( spdlog::level::info );
 }
 
+TEST_CASE("test_messages_snapshot_2", "1")
+{
+    spdlog::set_level( spdlog::level::debug );
+    sob::L2Book ob{"S 2 3 1.2 100 1.3 150 1.35 50 1.4 50 1.3 250 1.5 100"};
+    spdlog::debug( "[test_messages_snapshot] Got snapshot: \n{}", ob.toString() );
+
+    spdlog::debug( "[test_messages_snapshot] Got snapshot simple: {}", ob.to_simple_string() );
+
+    sob::L2Book new_ob{ ob.to_simple_string() };
+    REQUIRE( ob == new_ob );
+    spdlog::set_level( spdlog::level::info );
+}
 
 
 
