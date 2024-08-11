@@ -53,8 +53,7 @@ public:
         return lastMode;
     }
     
-    // virtual SyncMode onBookUpdate( std::shared_ptr<L3Book<BuffType>>& book, const Order& order ) override
-    virtual SyncMode onBookUpdate( L3Book<BuffType>* book, const Order& order ) override
+    virtual void onBookUpdate( L3Book<BuffType>* book, const Order& order ) override
     {
         actualOrderCnt++;
         actualSnapShotCnt++;
@@ -64,29 +63,33 @@ public:
         }
 
         if( actualOrderCnt > actualSnapShotCnt + 1 && actualTradeCnt > actualSnapShotCnt + 1 ) {
-            return mode = SyncMode::ORDER_IN_LEAD;
+            // return mode = SyncMode::ORDER_IN_LEAD;
+            mode = SyncMode::ORDER_IN_LEAD;
         }
-        return mode = SyncMode::SYNCHRONOUS;
+        // return mode = SyncMode::SYNCHRONOUS;
+        mode = SyncMode::SYNCHRONOUS;
     }
     
-    // virtual SyncMode onTradeMsg( std::shared_ptr<L3Book<BuffType>>& book, const Trade& trade ) override
-    virtual SyncMode onTradeMsg( L3Book<BuffType>* book, const Trade& trade ) override
+    virtual void onTradeMsg( L3Book<BuffType>* book, const Trade& trade ) override
     {
         receivedTradeCnt++;
         if( actualTradeCnt < receivedTradeCnt ) {
-            return mode = SyncMode::TRADE_IN_LEAD;
+            // return mode = SyncMode::TRADE_IN_LEAD;
+            mode = SyncMode::TRADE_IN_LEAD;
         }
-        return mode = SyncMode::SYNCHRONOUS;
+        // return mode = SyncMode::SYNCHRONOUS;
+        mode = SyncMode::SYNCHRONOUS;
     }
 
-    // virtual SyncMode onSnapShotMsg( std::shared_ptr<L3Book<BuffType>>& book ) override
-    virtual SyncMode onSnapShotMsg( L3Book<BuffType>* book ) override
+    virtual void onSnapShotMsg( L3Book<BuffType>* book ) override
     {
         receivedSnapShotCnt++;
         if( actualSnapShotCnt < actualSnapShotCnt ) {
-            return mode = SyncMode::SNAPSHOT_IN_LEAD;
+            // return mode = SyncMode::SNAPSHOT_IN_LEAD;
+            mode = SyncMode::SNAPSHOT_IN_LEAD;
         }
-        return mode = SyncMode::SYNCHRONOUS;
+        // return mode = SyncMode::SYNCHRONOUS;
+        mode = SyncMode::SYNCHRONOUS;
     }
 }; // class Synchronizer
 
@@ -109,7 +112,7 @@ private:
 
     bool doGuess{ true };
 
-    std::shared_ptr<L3OrderBookListener<BuffType>> leaderBook;
+    std::shared_ptr<L3Book<BuffType>> leaderBook;
 
 public:
     // synchronizer should subscribe to all three books
