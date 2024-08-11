@@ -143,6 +143,15 @@ public:
         synchronizer.subscribe( bookSnapShot );
     }
 
+    void acceptSubscription( L3OrderBookListener<BuffType>* book )
+    {
+        book->subscribe( bookGroundTruth );
+        book->subscribe( bookTrade );
+        book->subscribe( bookSnapShot );
+    }
+
+
+
     auto applyOrder( Order& order )
     {
         return bookGroundTruth->applyOrder( order );

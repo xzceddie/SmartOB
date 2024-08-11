@@ -5,6 +5,7 @@
 #include <spdlog/spdlog.h>
 #include <boost/program_options.hpp>
 #include <fstream>
+#include <Strategy.h>
 
 namespace po = boost::program_options;
 
@@ -12,10 +13,13 @@ namespace sob {
 
 
 template <template <typename T, typename AllocT=std::allocator<T> > class BuffType = boost::circular_buffer>
-SmartOrderBook<BuffType> runSimSOB( std::vector<std::string>& order_strs )
+SmartOrderBook<BuffType> runSimSOB( std::vector<std::string>& order_strs, bool verbose = false )
 {
-    
     SmartOrderBook<BuffType> sob;
+    if( verbose ) {
+        LoggingStrategy<BuffType> strategy;
+        sob.acceptSubscription( &strategy );
+    }
     for( const auto& str : order_strs ) {
         sob.applyMessage( str );
     }
@@ -23,7 +27,7 @@ SmartOrderBook<BuffType> runSimSOB( std::vector<std::string>& order_strs )
 }
 
 template <template <typename T, typename AllocT=std::allocator<T> > class BuffType = boost::circular_buffer>
-SmartOrderBook<BuffType> runSimSOB( const std::string& file_name )
+SmartOrderBook<BuffType> runSimSOB( const std::string& file_name, bool verbose = false )
 {
     std::vector<std::string> order_strs;
     std::ifstream ifs{ file_name };
@@ -31,7 +35,7 @@ SmartOrderBook<BuffType> runSimSOB( const std::string& file_name )
     while( std::getline( ifs, line ) ) {
         order_strs.push_back( line );
     }
-    return runSimSOB<BuffType>( order_strs );
+    return runSimSOB<BuffType>( order_strs, verbose );
 }
 
 } // namespace sob
@@ -44,6 +48,7 @@ int main( int argc, char** argv )
     desc.add_options()
         ("help", "produce help message")
         ("sim_file", po::value<std::string>(), "the simulation file you would like to input")
+        ("verbose", "you want to be loud or not")
         ("dBufferType", po::value<std::string>(),
                  "what type of dBuffer you would like to use, "
                  "which is the buffer type used in the L3PriceLevel, "
@@ -79,12 +84,17 @@ int main( int argc, char** argv )
         dBufferType = "circular_buffer";
     }
 
+    bool verbose = false;
+    if (vm.count("verbose")) {
+        verbose = true;
+    }
+
     spdlog::info("[::main] using L3OrderBook" );
     if (dBufferType == "list") {
-        auto res_book = sob::runSimSOB<std::list>( sim_file );
+        auto res_book = sob::runSimSOB<std::list>( sim_file, verbose );
         spdlog::info( "[::main] Got result book: \n{}", res_book.getLeaderBook()->toString() );
     } else if (dBufferType == "circular_buffer") {  
-        auto res_book = sob::runSimSOB<boost::circular_buffer>( sim_file );
+        auto res_book = sob::runSimSOB<boost::circular_buffer>( sim_file, verbose );
         spdlog::info( "[::main] Got result book: \n{}", res_book.getLeaderBook()->toString() );
     }
 
