@@ -77,13 +77,13 @@ public:
     
     virtual void onTradeMsg( L3Book<BuffType>* book, const Trade& trade ) override
     {
-        spdlog::debug( "onTradeMsg" );
+        // spdlog::debug( "onTradeMsg" );
         receivedTradeCnt++;
         if( actualTradeCnt < receivedTradeCnt ) {
             // return mode = SyncMode::TRADE_IN_LEAD;
             lastMode = mode;
             mode = SyncMode::TRADE_IN_LEAD;
-            spdlog::warn("[Synchronizer::onTradeMsg] mode set to {}", static_cast<int>(mode));
+            // spdlog::warn("[Synchronizer::onTradeMsg] mode set to {}", static_cast<int>(mode));
             return ;
         } else {
             // return mode = SyncMode::SYNCHRONOUS;
@@ -175,27 +175,20 @@ public:
             } else if ( str[0] == 'T' ) {
                 Trade trade{ str };
                 applyTrade( trade );
-
-                spdlog::warn("-- Hello");
-                spdlog::warn( "[SmartOrderBook::applyMessage] status: {}", static_cast<int>(synchronizer.getSyncStatus()));
             } else if ( str[0] == 'S' ) {
                 L2Book snapshot{ str };
                 applySnapShot( snapshot );
             }
 
-            spdlog::info("-- Hello");
             auto status = synchronizer.getSyncStatus();
             auto last_status = synchronizer.getLastSyncStatus();
 
-            spdlog::debug( "[SmartOrderBook::applyMessage] status: {}", static_cast<int>(status));
-
             {
                 /**
-                 *  @brief  when it is now anything but ORDER_IN_LEAD and last status is ORDER_IN_LEAD,
-                 *              update bookTrade and bookSnapShot with the ground truth
+                 *  update bookTrade and bookSnapShot with the ground truth
                  */
                 if (status == SyncMode::SYNCHRONOUS) {
-                    spdlog::info( "[SmartOrderBook::applyMessage] SYNCHRONOUS" );
+                    spdlog::debug( "[SmartOrderBook::applyMessage] SYNCHRONOUS" );
                     leaderBook = bookGroundTruth;
                     // TODO: we should make it asynchronous, i.e. in another thread such that it will not block the main logic
                     // if( last_status == SyncMode::ORDER_IN_LEAD ) {
@@ -205,7 +198,7 @@ public:
                 }
 
                 else if( status == SyncMode::ORDER_IN_LEAD ) {
-                    spdlog::info( "[SmartOrderBook::applyMessage] ORDER_IN_LEAD" );
+                    spdlog::debug( "[SmartOrderBook::applyMessage] ORDER_IN_LEAD" );
                     leaderBook = bookGroundTruth;
                     // we need deep copy here, don't simply assign the pointers
                     *bookTrade = *bookGroundTruth;
@@ -213,12 +206,12 @@ public:
                 }
 
                 else if( status == SyncMode::TRADE_IN_LEAD ) {
-                    spdlog::warn( "[SmartOrderBook::applyMessage] TRADE_IN_LEAD" );
+                    spdlog::debug( "[SmartOrderBook::applyMessage] TRADE_IN_LEAD" );
                     leaderBook = bookTrade;
                 }
 
                 else if( status == SyncMode::SNAPSHOT_IN_LEAD ) {
-                    spdlog::info( "[SmartOrderBook::applyMessage] SNAPSHOT_IN_LEAD" );
+                    spdlog::debug( "[SmartOrderBook::applyMessage] SNAPSHOT_IN_LEAD" );
                     leaderBook = bookSnapShot;
                 }
             }
