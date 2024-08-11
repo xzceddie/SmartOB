@@ -26,12 +26,15 @@ public:
 
     void onBookUpdate()
     {};
-    void onBookUpdate( std::shared_ptr<L3Book<BuffType>>& ) {};
+    // void onBookUpdate( std::shared_ptr<L3Book<BuffType>>& ) {};
     void onBookUpdate( std::shared_ptr<L3Book<BuffType>>&, const Order& order ) = 0;
     void onBookUpdate( L3Book<BuffType>& )
     {};
     void onBookUpdate( const L3Book<BuffType>& )
     {};
+
+    void onTradeMsg( std::shared_ptr<L3Book<BuffType>>& book, const Trade& trade ) = 0;
+    void onSnapShotMsg( std::shared_ptr<L3Book<BuffType>>& book ) = 0;
 
 }; // class L3OrderBookListener
 
