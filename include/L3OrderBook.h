@@ -24,7 +24,6 @@ class L3Book
 private:
     OneSideBook<L3PriceLevel<BuffType>, BidComparator> bidBook;
     OneSideBook<L3PriceLevel<BuffType>, AskComparator> askBook;
-    // std::unordered_map<int, std::list<Order>::iterator> orderMap;
     std::unordered_map<int, typename dBuffer<Order, BuffType>::iterator> orderMap;
 
     size_t bidSideSize = 0;
@@ -33,8 +32,11 @@ private:
 public:
 
     /**
-     * @brief a custom copy constructor is necessary to deal with the iterator problem
-     *        If trivially copied, the copied iterators will point to the original object
+     * @brief   a custom copy constructor is necessary to deal with the iterator problem
+     *           trivially copied, the copied iterators will point to the original object
+     *
+     * @NOTE    This function will be O(N^2) for std::list but only O(N) for boost::circular_buffer, N is the number of orders in the whole L3Book
+     *          We shall use it cautiously
      */
     L3Book( const L3Book<BuffType>& rhs )
     : bidBook { rhs.bidBook }
@@ -235,7 +237,6 @@ public:
         }
     }
 
-    // TODO: Implement modifyOrder
     // true: reprice success, false: reprice fail
     virtual bool modifyOrder( const Order& order )
     {
@@ -338,12 +339,16 @@ public:
     {
         std::stringstream ss;
 
+        if ( askBook.empty() )
+            ss << "<Empty>\n";
         for( auto rit = askBook.rbegin(); rit != askBook.rend(); ++rit ) {
             ss << rit->second.toString() << '\n';
         }
 
-        ss << "------\n";
+        ss << "--^ ASK SIDE--------BID SIDE V---\n";
 
+        if ( bidBook.empty() )
+            ss << "<Empty>\n";
         for( auto it = bidBook.begin(); it != bidBook.end(); ++it ) {
             ss << it->second.toString() << '\n';
         }

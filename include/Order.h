@@ -166,7 +166,7 @@ struct Order
                 return "buy";
             }
         };
-        os << "Order{" << get_type_str(o)
+        os << "Odr{" << get_type_str(o)
            << ", id=" << o.orderId
            << ", " << get_side_str(o)
            << ", sz=" << o.size
@@ -235,10 +235,10 @@ struct L3PriceLevel
 
     friend std::ostream& operator<<(std::ostream& os, const L3PriceLevel& l)
     {
-        os << "L3PxLvl{px=" << l.price
+        os << "L3Lvl{px=" << l.price
            << ", qty=" << l.quantity
-           << ", #orders=" << l.numOrders
-           << ", orders={";
+           << ", #odr=" << l.numOrders
+           << ", odr={";
 
         for (auto& o : l.orders) 
             os << o << ", ";
@@ -354,10 +354,10 @@ struct L3PriceLevel<boost::circular_buffer>
 
     friend std::ostream& operator<<(std::ostream& os, const L3PriceLevel& l)
     {
-        os << "L3PxLvl{px=" << l.price
+        os << "L3Lvl{px=" << l.price
            << ", qty=" << l.quantity
-           << ", #orders=" << l.numOrders
-           << ", orders={";
+           << ", #odr=" << l.numOrders
+           << ", odr={";
 
         for (auto& o : l.orders) 
             os << o << ", ";
