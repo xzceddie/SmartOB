@@ -364,7 +364,6 @@ public:
                          *          The guessed ask side size is: 2 * ( recored_trds_vol[trd_px] + trade.getTotalVol() )
                          *          For simplicity, we just guess that there is one order there
                          * *******************************************/
-                        askSideSize += 2 * recored_trds_vol[trd_px] + trade.getTotalVol();
                         newOrder( Order( fmt::format("N {} 1 {} {}", 
                                                      IdGenNeg::getInstance().genId(),
                                                      2 * recored_trds_vol[trd_px],
@@ -373,16 +372,104 @@ public:
                         last_unconsumed_lvl = trd_px;
                     }
                 } else if ( trd_px == best_bid_px ) {
+                    /* *******************************************
+                     * This has been a very logical trade message, we should just reflect the information in the orderbook
+                     *  NOTE: I'm simplifying this logic, to only estimate the untraded quantity using the last trade mesage
+                     *        The best level
+                     * *******************************************/
+                    const auto trd_qty = trade.getTotalVol();
+                    if ( trd_qty < getBestBid().quantity ) {
+                        // simply reflect the trade information on the book
+                        newOrder( Order( fmt::format("N {} 1 {} {}", 
+                                                     IdGenNeg::getInstance().genId(),
+                                                     trd_qty,
+                                                     best_bid_px ) ) );
+                    } else {
+                        // trade quantity + not yet received aggresive orders
+                        newOrder( Order( fmt::format("N {} 1 {} {}", 
+                                                     IdGenNeg::getInstance().genId(),
+                                                     3 * trd_qty,
+                                                     best_bid_px ) ) );
+                    }
+                    
                 } else {
-                    throw std::runtime_error( "unexpected trade message, there has to have been out-of-order or lost trades" );
+                    // throw std::runtime_error( "unexpected trade message, there has to have been out-of-order or lost trades" );
+                    spdlog::warn( "unexpected trade message, there has to have been out-of-order or lost trades, do nothing" );
                 }
-            }
-            
-            
+            } else {
+                /* *******************************************
+                 * This is a trade-through order, apply the order first and then add an ask order of 2 * total traded volume on the best bid level
+                 * *******************************************/
+                const auto total_trd_vol = trade.getTotalVol();
+                newOrder( fmt::format("N {} 1 {} {}", 
+                                      IdGenNeg::getInstance().genId(),
+                                      total_trd_vol, 
+                                      trade.price[0] ) );
 
+                newOrder( fmt::format("N {} 1 {} {}", 
+                                      IdGenNeg::getInstance().genId(),
+                                      2 * total_trd_vol, 
+                                      best_bid_px ) );
+            }
         } else {
+            // Seller is the liquidity taker
+            const auto best_ask_px = getBestAsk().price;
+            const int lvl_cnt = trade.getLvlCnt();
+
+            if (lvl_cnt == 1) {
+                const auto trd_px = trade.price[0];
+                
+                if( trd_px < best_ask_px ) {
+                    static std::unordered_map<double, int> recored_trds_vol;
+                    static double last_unconsumed_lvl = 0;
+
+                    if ( trd_px == last_unconsumed_lvl ) {
+                        recored_trds_vol[trd_px] += trade.getTotalVol();
+                    } else {
+                        newOrder( Order( fmt::format("N {} 0 {} {}", 
+                                                     IdGenNeg::getInstance().genId(),
+                                                     2 * recored_trds_vol[trd_px],
+                                                     last_unconsumed_lvl ) ) );
+                        recored_trds_vol.erase( last_unconsumed_lvl );
+                        last_unconsumed_lvl = trd_px;
+                    }
+                } else if ( trd_px == best_ask_px ) {
+                    const auto trd_qty = trade.getTotalVol();
+                    if ( trd_qty < getBestBid().quantity ) {
+                        // simply reflect the trade information on the book
+                        newOrder( Order( fmt::format("N {} 0 {} {}", 
+                                                     IdGenNeg::getInstance().genId(),
+                                                     trd_qty,
+                                                     best_ask_px ) ) );
+                    } else {
+                        // trade quantity + not yet received aggresive orders
+                        newOrder( Order( fmt::format("N {} 0 {} {}", 
+                                                     IdGenNeg::getInstance().genId(),
+                                                     3 * trd_qty,
+                                                     best_ask_px ) ) );
+                    }
+                    
+                } else {
+                    spdlog::warn( "unexpected trade message, there has to have been out-of-order or lost trades, do nothing" );
+                }
+            } else {
+                /* *******************************************
+                 * This is a trade-through order, apply the order first and then add an ask order of 2 * total traded volume on the best bid level
+                 * *******************************************/
+                const auto total_trd_vol = trade.getTotalVol();
+                newOrder( fmt::format("N {} 0 {} {}", 
+                                      IdGenNeg::getInstance().genId(),
+                                      total_trd_vol, 
+                                      trade.price[trade.getLvlCnt()-1] ) );
+
+                newOrder( fmt::format("N {} 0 {} {}", 
+                                      IdGenNeg::getInstance().genId(),
+                                      2 * total_trd_vol, 
+                                      best_ask_px ) );
+            }
         }
     }
+
 
     L3Book( std::vector<Order>& orders )
     {
