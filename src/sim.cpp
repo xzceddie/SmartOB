@@ -77,7 +77,10 @@ int main( int argc, char** argv )
         ("L2", "use L2Book, if unspecified, will use L3Book")
         ("test", "will run both L2Book and L3Book and test if the aggregated L3Book result is the same as the L2Book")
         ("sim_file", po::value<std::string>(), "the simulation file you would like to input")
-        ("dBufferType", po::value<std::string>(), "what type of dBuffer you would like to use, which is the buffer type used in the L3PriceLevel, choose from: [ list, circular_buffer ], default to circular_buffer")
+        ("dBufferType", po::value<std::string>(),
+                 "what type of dBuffer you would like to use, "
+                 "which is the buffer type used in the L3PriceLevel, \n"
+                 "choose from: [ list, circular_buffer ], default to circular_buffer")
     ;
 
     po::variables_map vm;
